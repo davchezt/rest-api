@@ -11,7 +11,7 @@ use app\ModelInterface;
 
 class User implements ModelInterface
 {
-    public function getById($id) : array
+    public function getById($id = 0) : array
     {
         $user = [
             'id' => 1,
@@ -33,6 +33,17 @@ class User implements ModelInterface
         return $users;
     }
 
+    public function getList($start = 0, $limit = 30) : array
+    {
+        $users = [
+            ['id' => 1, 'username' => 'davchezt', 'email' => 'davchezt@gamil.com'],
+            ['id' => 2, 'username' => 'vchezt', 'email' => 'chezt.v@live.com'],
+            ['id' => 3, 'username' => 'raiza', 'email' => 'raiza.rhamdan@gamil.com']
+        ];
+
+        return $users;
+    }
+
     public function getCount() : int
     {
         $users = [
@@ -42,5 +53,25 @@ class User implements ModelInterface
         ];
 
         return count($users);
+    }
+
+    public function addData($param = array()) : int
+    {
+        return -1;
+    }
+
+    public function updateData($param = array()) : int
+    {
+        return -1;
+    }
+
+    public function deleteData($param = array()) : int
+    {
+        return -1;
+    }
+
+    public function clearData() : void
+    {
+        // nothing
     }
 }

@@ -7,7 +7,7 @@
 
 namespace app\Lib;
 
- class R {
+class R {
 	private static $data = array();
 	public static function get($key, $default = null)
 	{

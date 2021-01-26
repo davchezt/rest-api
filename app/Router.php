@@ -12,6 +12,7 @@ use flight\Engine;
 use app\Greeting;
 use app\Helper;
 use app\Lib\R;
+use app\Lib\JWTAuth;
 
 use app\Adapter\User;
 
@@ -25,49 +26,151 @@ class Router
         $this->app->register('model', 'app\Model', array());
     }
 
-    public function before()
+    public function map()
     {
-        $app = $this->app;
-        $app->before('start', function () use ($app) {
-            $app->response()->header('Access-Control-Allow-Origin', '*');
-            $app->response()->header('Access-Control-Allow-Credentials', 'true');
-            $app->response()->header('Access-Control-Allow-Headers', 'Authorization, Origin, X-Requested-With, Content-Type, Accept');
-        
-            if ($app->request()->method === 'OPTIONS') {
-                $app->response()->header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE');
+        $this->app->map('route', function ($pattern, $callback, $pass_route = false, $secure = false) {
+            if ($secure) {
+                $token = $this->app->request()->getToken();
+                if (JWTAuth::verifyToken($token)) {
+                    $this->app->router()->map($pattern, $callback, $pass_route);
+                } else {
+                    $this->app->router()->map($pattern, function () {
+                        $this->app->notAuthorized('Unauthorized');
+                    }, $pass_route);
+                }
+            } else {
+                $this->app->router()->map($pattern, $callback, $pass_route);
             }
-        
-            $app->response()->header('X-Powered-By', 'Leonardo DaVchezt');
+        });
+
+        $this->app->map('notFound', function () {
+            $this->app->json(['response' => 'Error 404'], 404);
         });
         
-        $app->before('json', function (&$params, &$output) use ($app) {
+        $this->app->map('error', function (Exception $ex) {
+            $err = array(
+                'error' => array(
+                    'code' => $ex->getCode(),
+                    'messsage' => $ex->getMessage() . ' at ' . $ex->getFile() . ':' . $ex->getLine(),
+                    'trace' => $ex->getTrace()
+                )
+            );
+            $this->app->json(['response' => $err], 500);
+        });
+
+        $this->app->map('json', function ($data, $code = null, $encode = true, $charset = 'utf-8', $option = JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT) {
+            if ($this->app->request()->query['jsonp']) {
+                return $this->app->jsonp($data, 'jsonp', $code, $encode, $charset, $option);
+            }
+            
+            $code = ($code) ? $code : $this->app->response()->status();
+            $this->app->response()
+                ->status($code);
+            
+            $response = $this->app->response();
+            $status = $response->status();
+            $message = $response::$codes;
+            
+            $data = array_merge([
+                'status' => $status,
+                'message' => $message[$status],
+                'timestamp' => Helper::timeNow()
+            ], $data);
+            $json = ($encode) ? json_encode($data, $option) : $data;
+            $this->app->response()
+                ->header('Content-Type', 'application/json; charset='.$charset)
+                ->write($json)
+                ->send();
+        });
+
+        $this->app->map('jsonp', function ($data, $param = 'jsonp', $code = null, $encode = true, $charset = 'utf-8', $option = JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT) {
+            $code = ($code) ? $code : $this->app->response()->status();
+            $this->app->response()
+                ->status($code);
+            
+            $response = $this->app->response();
+            $status = $response->status();
+            $message = $response::$codes;
+            
+            $data = array_merge([
+                'status' => $status,
+                'message' => $message[$status],
+                'timestamp' => Helper::timeNow()
+            ], $data);
+
+            $callback = $this->app->request()->query[$param];
+            $json = ($encode) ? json_encode($data, $option) : $data;
+
+            $this->app->response()
+                ->header('Content-Type', 'application/json; charset='.$charset)
+                ->write($callback.'('.$json.');')
+                ->send();
+        });
+
+        $this->app->map('notAuthorized', function ($message/* = 'Unauthorized'*/) {
+            return $message;
+        });
+    }
+
+    public function before()
+    {
+        $this->app->before('start', function () {
+            $this->app->response()->header('Access-Control-Allow-Origin', '*');
+            $this->app->response()->header('Access-Control-Allow-Credentials', 'true');
+            $this->app->response()->header('Access-Control-Allow-Headers', 'Authorization, Origin, X-Requested-With, Content-Type, Accept');
+        
+            if ($this->app->request()->method === 'OPTIONS') {
+                $this->app->response()->header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE');
+            }
+        
+            $this->app->response()->header('X-Powered-By', 'Leonardo DaVchezt');
+        });
+        
+        $this->app->before('json', function (&$params, &$output) {
             if (R::get('config')['app']['debug']) {
                 $params[0] = [
                     // 'headers' => $app->response()->headers(),
                     'request' => [
-                        'method' => $app->request()->getMethod(),
+                        'method' => $this->app->request()->getMethod(),
                         // 'header' => $app->request()->getHeaders(),
-                        'token' => $app->request()->getToken(),
-                        'body' => json_decode($app->request()->getBody(), true),
+                        'token' => $this->app->request()->getToken(),
+                        'body' => json_decode($this->app->request()->getBody(), true),
                     ],
                     'response' => $params[0]['response']
                 ];
             }
         });
 
-        $app->before('jsonp', function (&$params, &$output) use ($app) {
+        $this->app->before('jsonp', function (&$params, &$output) {
             if (R::get('config')['app']['debug']) {
                 $params[0] = [
                 // 'headers' => $app->response()->headers(),
                 'request' => [
-                    'method' => $app->request()->getMethod(),
+                    'method' => $this->app->request()->getMethod(),
                     // 'header' => $app->request()->getHeaders(),
-                    'token' => $app->request()->getToken(),
-                    'body' => json_decode($app->request()->getBody(), true),
+                    'token' => $this->app->request()->getToken(),
+                    'body' => json_decode($this->app->request()->getBody(), true),
                 ],
                 'response' => $params[0]['response']
             ];
             }
+        });
+
+        $this->app->before('notAuthorized', function (&$params, &$output) {
+            $params[0] = 'Error 401 - ' . $params[0];
+        });
+    }
+
+    public function after()
+    {
+        $this->app->after('notAuthorized', function (&$params, &$output) {
+            $output = null;
+            $token = $this->app->request()->getToken();
+
+            $this->app->json([
+                'response' => $params[0],
+                'token' => $token
+            ], 401);
         });
     }
 
@@ -86,97 +189,31 @@ class Router
 
             $response = ['response' => $this->app->model()->getAll()];
 
-            if ($this->app->request()->query['jsonp']) {
-                $this->app->jsonp($response);
-            } else {
-                $this->app->json($response);
-            }
-        });
+            $this->app->json(['response' => $this->app->model()->getAll()]);
+        }, false, true);
 
         $this->app->route('GET /user/@id:[0-9]{1,10}', function ($id) {
             $user = new User();
             $this->app->model()->setAdapter($user);
         
             $this->app->json(['response' => $this->app->model()->getById($id)]);
-        });
+        }, false, false);
 
         $this->app->route('GET /user/count', function () {
             $user = new User();
             $this->app->model()->setAdapter($user);
         
             $this->app->json(['response' => $this->app->model()->getCount()]);
-        });
+        }, false, false);
     }
     
-    public function map()
-    {
-        $app = $this->app;
-        $app->map('notFound', function () use ($app) {
-            $app->json(['response' => 'Error 404'], 404);
-        });
-        
-        $app->map('error', function (Exception $ex) use ($app) {
-            $err = array(
-                'error' => array(
-                    'code' => $ex->getCode(),
-                    'messsage' => $ex->getMessage() . ' at ' . $ex->getFile() . ':' . $ex->getLine(),
-                    'trace' => $ex->getTrace()
-                )
-            );
-            $app->json(['response' => $err], 500);
-        });
-
-        $app->map('json', function ($data, $code = null, $encode = true, $charset = 'utf-8', $option = JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT) use ($app) {
-            $code = ($code) ? $code : $app->response()->status();
-            $app->response()
-                ->status($code);
-            
-            $response = $app->response();
-            $status = $response->status();
-            $message = $response::$codes;
-            
-            $data = array_merge([
-                'status' => $status,
-                'message' => $message[$status],
-                'timestamp' => Helper::timeNow()
-            ], $data);
-            $json = ($encode) ? json_encode($data, $option) : $data;
-            $app->response()
-                ->header('Content-Type', 'application/json; charset='.$charset)
-                ->write($json)
-                ->send();
-        });
-
-        $app->map('jsonp', function ($data, $param = 'jsonp', $code = null, $encode = true, $charset = 'utf-8', $option = JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT) use ($app) {
-            $code = ($code) ? $code : $app->response()->status();
-            $app->response()
-                ->status($code);
-            
-            $response = $app->response();
-            $status = $response->status();
-            $message = $response::$codes;
-            
-            $data = array_merge([
-                'status' => $status,
-                'message' => $message[$status],
-                'timestamp' => Helper::timeNow()
-            ], $data);
-
-            $callback = $app->request()->query[$param];
-            $json = ($encode) ? json_encode($data, $option) : $data;
-
-            $app->response()
-                ->header('Content-Type', 'application/json; charset='.$charset)
-                ->write($callback.'('.$json.');')
-                ->send();
-        });
-    }
-
     public function start()
     {
-        $this->before();
-        $this->init();
         $this->map();
+        $this->before();
+        $this->after();
+
+        $this->init();
 
         $this->app->start();
     }

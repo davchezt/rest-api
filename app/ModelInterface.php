@@ -9,7 +9,14 @@ namespace app;
 
 interface ModelInterface
 {
-    public function getById($id) : array;
+    public function getById($id = 0) : array;
     public function getAll() : array;
+    public function getList($start = 0, $limit = 30) : array;
     public function getCount() : int;
+
+    public function addData($param = array()) : int;
+    public function updateData($param = array()) : int;
+    public function deleteData($param = array()) : int;
+
+    public function clearData() : void;
 }
