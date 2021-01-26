@@ -1,7 +1,7 @@
 <?php
 /**
  * @author      Raiza Rhamdan (Leonardo DaVchezt) <davchezt@gmail.com>
- * @copyright   Copyright (c), 2014 Raiza Rhamdan
+ * @copyright   Copyright (c), 2021 Raiza Rhamdan
  * @license		MIT public license
  */
 

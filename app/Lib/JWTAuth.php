@@ -1,4 +1,10 @@
 <?php
+/**
+ * @author      Raiza Rhamdan (Leonardo DaVchezt) <davchezt@gmail.com>
+ * @copyright   Copyright (c), 2021 Raiza Rhamdan
+ * @license		MIT public license
+ */
+
 namespace app\Lib;
 
 use \Firebase\JWT\JWT;
