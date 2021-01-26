@@ -21,7 +21,8 @@ class Greeting
     public function hello()
     {
         if ($this->app) {
-            $this->app->json(["response" => "Hello, {$this->name}!"], 201);
+            $response = ["data" => "Hello, {$this->name}!"];
+            $this->app->json(["response" => $response], 201);
         }
     }
 }

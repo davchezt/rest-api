@@ -26,13 +26,13 @@ class Database {
 	public function open()
 	{
 		try {
-            $this->db = new PDO($this->dsn, $this->user, $this->password);
+            $this->db = new \PDO($this->dsn, $this->user, $this->password);
             if ($this->db) {
-                $this->db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+                $this->db->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
                 $this->db->query("SET NAMES utf8mb4");
             }
-		} catch(PDOException $e) {
-			throw new Exception(sprintf('Database Error: %s', $e->getMessage()));
+		} catch(\PDOException $e) {
+			throw new \Exception(sprintf('Database Error: %s', $e->getMessage()));
 		}
 	}
 

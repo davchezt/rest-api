@@ -19,11 +19,18 @@ use app\Adapter\User;
 class Router
 {
     protected $app = null;
+    protected $id = 1;
 
     public function __construct(Engine $app)
     {
         $this->app = $app;
         $this->app->register('model', 'app\Model', array());
+
+        $token = $this->app->request()->getToken();
+        $header = JWTAuth::getHeader($token);
+        if (count($header) > 0) {
+            $this->id = $header['id'];
+        }
     }
 
     public function map()
@@ -35,7 +42,7 @@ class Router
                     $this->app->router()->map($pattern, $callback, $pass_route);
                 } else {
                     $this->app->router()->map($pattern, function () {
-                        $this->app->notAuthorized('Unauthorized');
+                        $this->app->notAuthorized('Authorization failed');
                     }, $pass_route);
                 }
             } else {
@@ -157,7 +164,7 @@ class Router
         });
 
         $this->app->before('notAuthorized', function (&$params, &$output) {
-            $params[0] = ['response' => 'Error 401 - ' . $params[0]];
+            $params[0] = ['message' => $params[0], 'detail' => 'Token is invalid or expired'];
 
             if (R::get('config')['app']['debug']) {
                 $token = $this->app->request()->getToken();
@@ -178,34 +185,49 @@ class Router
     public function init()
     {
         $this->app->route('/', function () {
-            $this->app->json(['response' => 'API Main']);
+            $this->app->json(['response' => ['data' => 'API Main']]);
         });
         
         $greeting = new Greeting($this->app);
         $this->app->route('GET /hello', [$greeting, 'hello']);
 
         $this->app->route('GET /user', function () { // http://localhost/rest/flight/user/?jsonp=console.log
-            $user = new User();
+            $user = new User($this->id);
             $this->app->model()->setAdapter($user);
 
-            $response = ['response' => $this->app->model()->getAll()];
+            $users = $this->app->model()->getAll();
+            $response = [
+                'users' => $users,
+                'count' => count($users)
+            ];
 
-            $this->app->json(['response' => $this->app->model()->getAll()]);
+            $this->app->json(['response' => $response]);
         }, false, true);
 
         $this->app->route('GET /user/@id:[0-9]{1,10}', function ($id) {
-            $user = new User();
+            $user = new User($this->id);
             $this->app->model()->setAdapter($user);
         
-            $this->app->json(['response' => $this->app->model()->getById($id)]);
-        }, false, false);
+            $userData = $this->app->model()->getById($id);
+            unset($userData['jwt']);
+            unset($userData['active']);
+            unset($userData['code']);
 
-        $this->app->route('GET /user/count', function () {
-            $user = new User();
+            $response = ['user' => $userData];
+            $this->app->json(['response' => $response]);
+        }, false, true);
+
+        $this->app->route('GET /user/@offset:[0-9]+/@limit:[0-9]+', function ($offset, $limit) {
+            $user = new User($this->id);
             $this->app->model()->setAdapter($user);
         
-            $this->app->json(['response' => $this->app->model()->getCount()]);
-        }, false, false);
+            $users = $this->app->model()->getList($offset, $limit);
+            $response = [
+                'users' => $users,
+                'count' => count($users)
+            ];
+            $this->app->json(['response' => $response]);
+        }, false, true);
     }
     
     public function start()

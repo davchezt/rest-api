@@ -51,6 +51,32 @@ class JWTAuth
     }
 
     /**
+     * This method get header from token.
+     *
+     * @param	string	$token	token.
+     * @return	array
+     */
+    public static function getHeader($token)
+    {
+        $result = array();
+        try {
+            // config secret
+            $secret = R::get('config')['app']['secret'];
+
+            // Decode Jwt Authentication Token
+            $obj = JWT::decode($token, $secret, array("HS256"));
+
+            if (isset($obj->header)) {
+                $result = (array) $obj->header;
+            }
+        } catch (\Exception $ex) {
+            // throw $ex;
+        }
+
+        return $result;
+    }
+
+    /**
      * This method verify a token.
      *
      * @param	string	$token	token.
