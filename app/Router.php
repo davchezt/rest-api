@@ -18,7 +18,7 @@ use app\Adapter\User;
 
 class Router
 {
-    private $app = null;
+    protected $app = null;
 
     public function __construct(Engine $app)
     {
@@ -30,7 +30,7 @@ class Router
     {
         $this->app->map('route', function ($pattern, $callback, $pass_route = false, $secure = false) {
             if ($secure) {
-                $token = $this->app->request()->getToken();
+                $token = $this->app->request()->getToken(); //  generate -> JWTAuth::getToken('1', 'davchezt')
                 if (JWTAuth::verifyToken($token)) {
                     $this->app->router()->map($pattern, $callback, $pass_route);
                 } else {
@@ -133,7 +133,7 @@ class Router
                     'request' => [
                         'method' => $this->app->request()->getMethod(),
                         // 'header' => $app->request()->getHeaders(),
-                        'token' => $this->app->request()->getToken(),
+                        // 'token' => $this->app->request()->getToken(),
                         'body' => json_decode($this->app->request()->getBody(), true),
                     ],
                     'response' => $params[0]['response']
@@ -148,7 +148,7 @@ class Router
                 'request' => [
                     'method' => $this->app->request()->getMethod(),
                     // 'header' => $app->request()->getHeaders(),
-                    'token' => $this->app->request()->getToken(),
+                    // 'token' => $this->app->request()->getToken(),
                     'body' => json_decode($this->app->request()->getBody(), true),
                 ],
                 'response' => $params[0]['response']
@@ -157,7 +157,12 @@ class Router
         });
 
         $this->app->before('notAuthorized', function (&$params, &$output) {
-            $params[0] = 'Error 401 - ' . $params[0];
+            $params[0] = ['response' => 'Error 401 - ' . $params[0]];
+
+            if (R::get('config')['app']['debug']) {
+                $token = $this->app->request()->getToken();
+                $params[0] = array_merge($params[0], array('token' => $token));
+            }
         });
     }
 
@@ -165,12 +170,8 @@ class Router
     {
         $this->app->after('notAuthorized', function (&$params, &$output) {
             $output = null;
-            $token = $this->app->request()->getToken();
 
-            $this->app->json([
-                'response' => $params[0],
-                'token' => $token
-            ], 401);
+            $this->app->json(['response' => $params[0]], 401);
         });
     }
 
