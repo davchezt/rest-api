@@ -63,7 +63,7 @@ class Image
                 $type,
                 $watermark
             );
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             return $e->getMessage();
         }
         if ($image) {
@@ -96,7 +96,7 @@ class Image
         }
         }
         if ($error) {
-            throw new Exception($error);
+            throw new \Exception($error);
         } else {
             return $file["tmp_name"];
         }
@@ -114,7 +114,7 @@ class Image
                 $file,
                 $this->config['baseDir'].self::DS.$destination.self::DS.$fileName
             );
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             return $e->getMessage();
         }
         return $save;
@@ -123,7 +123,7 @@ class Image
     public function saveAs($source, $destination)
     {
         if (!move_uploaded_file($source, $destination)) {
-            throw new Exception(sprintf("Failed to upload file to %s", $destination));
+            throw new \Exception(sprintf("Failed to upload file to %s", $destination));
         
             return;
         }
@@ -134,7 +134,7 @@ class Image
     {
         $size = getimagesize($source);
         if ($size === false) {
-            throw new Exception("File Is Not Image");
+            throw new \Exception("File Is Not Image");
         }
     
         return $size;
@@ -155,7 +155,7 @@ class Image
             $image = @imagecreatefrompng($source);
     }
         if (!$image) {
-            throw new Exception("File Is Not Image");
+            throw new \Exception("File Is Not Image");
         }
 
         return $image;

@@ -31,13 +31,16 @@ class Router
         if (count($header) > 0) {
             $this->id = $header['id'];
         }
+
+        // echo JWTAuth::getToken('1', 'davchezt'); exit;
+        // echo JWTAuth::getToken('2', 'vchezt'); exit;
     }
 
     public function map()
     {
         $this->app->map('route', function ($pattern, $callback, $pass_route = false, $secure = false) {
             if ($secure) {
-                $token = $this->app->request()->getToken(); //  generate -> JWTAuth::getToken('1', 'davchezt')
+                $token = $this->app->request()->getToken();
                 if (JWTAuth::verifyToken($token)) {
                     $this->app->router()->map($pattern, $callback, $pass_route);
                 } else {
@@ -71,8 +74,7 @@ class Router
             }
             
             $code = ($code) ? $code : $this->app->response()->status();
-            $this->app->response()
-                ->status($code);
+            $this->app->response()->status($code);
             
             $response = $this->app->response();
             $status = $response->status();
@@ -92,8 +94,7 @@ class Router
 
         $this->app->map('jsonp', function ($data, $param = 'jsonp', $code = null, $encode = true, $charset = 'utf-8', $option = JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT) {
             $code = ($code) ? $code : $this->app->response()->status();
-            $this->app->response()
-                ->status($code);
+            $this->app->response()->status($code);
             
             $response = $this->app->response();
             $status = $response->status();
@@ -114,7 +115,7 @@ class Router
                 ->send();
         });
 
-        $this->app->map('notAuthorized', function ($message/* = 'Unauthorized'*/) {
+        $this->app->map('notAuthorized', function ($message) {
             return $message;
         });
     }
@@ -130,17 +131,22 @@ class Router
                 $this->app->response()->header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE');
             }
         
-            $this->app->response()->header('X-Powered-By', 'Leonardo DaVchezt');
+            $this->app->response()->header('Cache-Control', 'no-store, no-cache, must-revalidate'); // HTTP 1.1
+            $this->app->response()->header('Pragma', 'no-cache'); // HTTP 1.0
+            $this->app->response()->header('Vary', 'Accept-Encoding, User-Agent');
+            $this->app->response()->header('X-Powered-By', 'davchezt/rest-api');
+
+            header_remove('Connection');
+            // $this->app->response()->header('Connection', 'close');
+
+            $this->app->lastModified(Helper::timeNow(true, true));
         });
         
         $this->app->before('json', function (&$params, &$output) {
             if (R::get('config')['app']['debug']) {
                 $params[0] = [
-                    // 'headers' => $app->response()->headers(),
                     'request' => [
                         'method' => $this->app->request()->getMethod(),
-                        // 'header' => $app->request()->getHeaders(),
-                        // 'token' => $this->app->request()->getToken(),
                         'body' => json_decode($this->app->request()->getBody(), true),
                     ],
                     'response' => $params[0]['response']
@@ -151,11 +157,8 @@ class Router
         $this->app->before('jsonp', function (&$params, &$output) {
             if (R::get('config')['app']['debug']) {
                 $params[0] = [
-                // 'headers' => $app->response()->headers(),
                 'request' => [
                     'method' => $this->app->request()->getMethod(),
-                    // 'header' => $app->request()->getHeaders(),
-                    // 'token' => $this->app->request()->getToken(),
                     'body' => json_decode($this->app->request()->getBody(), true),
                 ],
                 'response' => $params[0]['response']
@@ -217,7 +220,7 @@ class Router
             $this->app->json(['response' => $response]);
         }, false, true);
 
-        $this->app->route('GET /user/@offset:[0-9]+/@limit:[0-9]+', function ($offset, $limit) {
+        $this->app->route('GET|POST /user/@offset:[0-9]+/@limit:[0-9]+', function ($offset, $limit) {
             $user = new User($this->id);
             $this->app->model()->setAdapter($user);
         

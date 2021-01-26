@@ -1,11 +1,17 @@
-RewriteEngine On
+<IfModule mod_rewrite.c>
+    RewriteEngine On
 
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
 
-RewriteRule ^(.*)$ index.php [QSA,L]
+    RewriteRule ^(.*)$ index.php [QSA,L]
 
-# Rewrite directories to index.php/URL even though they exist.
-# Don't rewrite files so that we can still load CSS, etc.
-RewriteCond %{REQUEST_FILENAME} -f
-RewriteRule .* - [S=5]
+    # Rewrite directories to index.php/URL even though they exist.
+    # Don't rewrite files so that we can still load CSS, etc.
+    RewriteCond %{REQUEST_FILENAME} -f
+    RewriteRule .* - [S=5]
+</IfModule>
+
+<IfModule !mod_rewrite.c>
+	ErrorDocument 404 index.php
+</IfModule>

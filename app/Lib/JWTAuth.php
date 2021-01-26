@@ -31,8 +31,8 @@ class JWTAuth
 
         // date: now
         $now = Helper::timeNow(false, false, 'Y-m-d H:i:s');
-        // date: now +2 hours
-        $future = Helper::dateFuture('2 hours', 'Y-m-d H:i:s');
+        // date: now +12 hours
+        $future = Helper::dateFuture('12 hours', 'Y-m-d H:i:s');
 
         $token = array(
             'header' => [ 			// User Information
@@ -41,7 +41,7 @@ class JWTAuth
             ],
             'payload' => [
                 'iat'	=>	$now, 	// Start time of the token
-                'exp'	=>	$future	// Time the token expires (+2 hours)
+                'exp'	=>	$future	// Time the token expires (+12 hours)
             ]
         );
 
