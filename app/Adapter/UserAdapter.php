@@ -14,64 +14,52 @@ use app\SQL;
 
 class UserAdapter implements ModelInterface
 {
-    private $id = 0;
-
-    public function __construct($ignoreId)
-    {
-        $this->id = $ignoreId;
-    }
+    public function __construct() {}
 
     public function getById($id = 0) : array
     {
-        SQL::open();
-        $dbo = SQL::$db->prepare("SELECT `user`.`id`, `user`.`username`, `user`.`jwt`, `user`.`type`, `user`.`active`, `user`.`join_date`, `verify`.`code`, `profile`.`name`, `profile`.`dob`, `profile`.`email`, `profile`.`gender`, `profile`.`address` FROM `user` LEFT JOIN `profile` ON (`profile`.`id_user` = `user`.`id`) LEFT JOIN `verify` ON (`verify`.`id_user` = `user`.`id`) WHERE `user`.`id` = :id LIMIT 1");
-        $dbo->bindValue(':id', $id, \PDO::PARAM_INT);
-        $dbo->execute();
-        $user = $dbo->fetch(\PDO::FETCH_OBJ);
-        SQL::close();
-      
-        return $user ? (array)$user : [];
+        return [
+            'id' => '1',
+            'username' => 'davchezt',
+            'email' => 'davchezt@domain.com'
+        ];
     }
 
     public function getAll() : array
     {
-        $type = '0';
-        SQL::open();
-        $dbo = SQL::$db->prepare("SELECT `user`.`id`, `user`.`username`, `user`.`type`, `user`.`join_date` , `profile`.`name`, `profile`.`dob`, `profile`.`email`, `profile`.`gender`, `profile`.`address` FROM `user` LEFT JOIN `profile` ON (`profile`.`id_user` = `user`.`id`) WHERE `user`.`type` = :type AND `user`.`id` <> :id ORDER BY `id`");
-        $dbo->bindValue(':id', $this->id, \PDO::PARAM_INT);
-        $dbo->bindParam(':type', $type, \PDO::PARAM_STR, 12);
-        $dbo->execute();
-        $users = $dbo->fetchAll(\PDO::FETCH_ASSOC);
-        SQL::close();
-
-        return (array)$users;
+        return [
+            ['id' => '1', 'username' => 'davchezt', 'email' => 'davchezt@domain.com'],
+            ['id' => '2', 'username' => 'davchezt2', 'email' => 'davchezt2@domain.com'],
+            ['id' => '3', 'username' => 'davchezt3', 'email' => 'davchezt3@domain.com']
+        ];
     }
 
     public function getList($offset = 0, $limit = 30) : array
     {
-        SQL::open();
-        $dbo = SQL::$db->prepare("SELECT `user`.`id`, `user`.`username`, `user`.`type`, `user`.`join_date` , `profile`.`name`, `profile`.`dob`, `profile`.`email`, `profile`.`gender`, `profile`.`address` FROM `user` LEFT JOIN `profile` ON (`profile`.`id_user` = `user`.`id`) WHERE `user`.`id` <> :id ORDER BY `id` ASC LIMIT :offset, :limit");
-        $dbo->bindValue(':id', $this->id, \PDO::PARAM_INT);
-        $dbo->bindParam(':offset', $offset, \PDO::PARAM_INT);
-        $dbo->bindParam(':limit', $limit, \PDO::PARAM_INT);
-        $dbo->execute();
-        $users = $dbo->fetchAll(\PDO::FETCH_ASSOC);
-        SQL::close();
+        $data = [
+            ['id' => '1', 'username' => 'davchezt', 'email' => 'davchezt@domain.com'],
+            ['id' => '2', 'username' => 'davchezt2', 'email' => 'davchezt2@domain.com'],
+            ['id' => '3', 'username' => 'davchezt3', 'email' => 'davchezt3@domain.com']
+        ];
 
-        return (array)$users;
+        $arr = [];
+        $limit = $limit > (count($data) - 1) ? count($data) : $limit;
+        for($i = $offset; $i < $limit; $i++) {
+            $arr[$i] = $data[$i];
+        }
+
+        return $arr;
     }
 
     public function getCount() : int
     {
-        $id = $this->id;
-        $type = 0;
+        $data = [
+            ['id' => '1', 'username' => 'davchezt', 'email' => 'davchezt@domain.com'],
+            ['id' => '2', 'username' => 'davchezt2', 'email' => 'davchezt2@domain.com'],
+            ['id' => '3', 'username' => 'davchezt3', 'email' => 'davchezt3@domain.com']
+        ];
 
-        SQL::open();
-        $dbq = SQL::$db->query("SELECT COUNT(*) FROM `user` WHERE `user`.`type` = '{$type}' AND `user`.`id` <> '{$id}'");
-        $count = $dbq->fetchColumn();
-        SQL::close();
-
-        return $count;
+        return count($data);
     }
 
     public function addData($param = array()) : int
