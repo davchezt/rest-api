@@ -24,6 +24,7 @@ class App
     public function __construct(Engine $app)
     {
         $this->app = $app;
+        $this->app->set('flight.views.path', R::get('views'));
 
         $token = Helper::getToken();
         $header = JWTAuth::getHeader($token);
@@ -101,7 +102,7 @@ class App
             $this->app->json(['response' => 'Error 404'], 404);
         });
         
-        $this->app->map('error', function (\Exception $ex) {
+        $this->app->map('error', function (/*\Exception */$ex) {
             $err = array(
                 'error' => array(
                     'code' => $ex->getCode(),
