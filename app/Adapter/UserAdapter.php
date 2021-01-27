@@ -10,7 +10,7 @@ namespace app\Adapter;
 use app\ModelInterface;
 use app\SQL;
 
-class User implements ModelInterface
+class UserAdapter implements ModelInterface
 {
     private $id = 0;
 

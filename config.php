@@ -7,7 +7,7 @@
 
  return [
     'app' => [
-        'debug' => false,
+        'debug' => true,
         'secret' => 'U0hiqmizT7repIgy3wX1uJv6R3T8YtskNcZmF7ClH2ajBtE4nF8WXQGNAw5b3VVe'
     ],
     'db' => [

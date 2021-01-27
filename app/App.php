@@ -9,22 +9,19 @@ namespace app;
 
 use flight\Engine;
 
-use app\Greeting;
 use app\Helper;
 use app\Lib\R;
 use app\Lib\JWTAuth;
 
-use app\Adapter\User;
-
-class Router
+class App
 {
     protected $app = null;
     protected $id = 1;
+    protected $routers = [];
 
     public function __construct(Engine $app)
     {
         $this->app = $app;
-        $this->app->register('model', 'app\Model', array());
 
         $token = $this->app->request()->getToken();
         $header = JWTAuth::getHeader($token);
@@ -32,12 +29,57 @@ class Router
             $this->id = $header['id'];
         }
 
-        // echo JWTAuth::getToken('1', 'davchezt'); exit;
-        // echo JWTAuth::getToken('2', 'vchezt'); exit;
+        $this->initRouter();
+
+        // echo JWTAuth::getToken('1', 'davchezt', '7 days'); exit;
+        // echo JWTAuth::getToken('2', 'vchezt', '7 days'); exit;
     }
 
-    public function map()
+    public function initRouter()
     {
+        $exts = Helper::listingDir(R::get('routers'));
+        if (count($exts) != 0) {
+            foreach ($exts['files'] as $ext) {
+                if (file_exists($ext['location'] . '/' . $ext['file'])) {
+                    $name = pathinfo($ext['file'], PATHINFO_FILENAME);
+                    $routername = 'router' . ucfirst($name);
+                    $paramname = 'app\\Router\\' . ucfirst($name);
+
+                    $this->addRouter($routername, $paramname);
+                }
+            }
+        }
+    }
+
+    public function addRouter($name, $class)
+    {
+        $this->routers[$name] = array($class, array($this->app, $this->id));
+    }
+
+    public function loadRouter($name)
+    {
+        if (isset($this->routers[$name])) {
+            list($class, $params) = $this->routers[$name];
+            $this->app->register($name, $class, $params);
+
+            return true;
+        }
+
+        return false;
+    }
+
+    public function loadRouters()
+    {
+        foreach ($this->routers as $key => $val) {
+            if ($this->loadRouter($key)) {
+                $this->app->$key()->init();
+            }
+        }
+    }
+
+    public function start()
+    {
+        // MAP HOOK
         $this->app->map('route', function ($pattern, $callback, $pass_route = false, $secure = false) {
             if ($secure) {
                 $token = $this->app->request()->getToken();
@@ -57,7 +99,7 @@ class Router
             $this->app->json(['response' => 'Error 404'], 404);
         });
         
-        $this->app->map('error', function (Exception $ex) {
+        $this->app->map('error', function (\Exception $ex) {
             $err = array(
                 'error' => array(
                     'code' => $ex->getCode(),
@@ -118,10 +160,8 @@ class Router
         $this->app->map('notAuthorized', function ($message) {
             return $message;
         });
-    }
 
-    public function before()
-    {
+        // BEFORE HOOK
         $this->app->before('start', function () {
             $this->app->response()->header('Access-Control-Allow-Origin', '*');
             $this->app->response()->header('Access-Control-Allow-Credentials', 'true');
@@ -174,73 +214,19 @@ class Router
                 $params[0] = array_merge($params[0], array('token' => $token));
             }
         });
-    }
 
-    public function after()
-    {
+        $this->app->before('start', function () {
+            $this->loadRouters();
+        });
+
+        // AFTER HOOK
         $this->app->after('notAuthorized', function (&$params, &$output) {
             $output = null;
 
             $this->app->json(['response' => $params[0]], 401);
         });
-    }
 
-    public function init()
-    {
-        $this->app->route('/', function () {
-            $this->app->json(['response' => ['data' => 'API Main']]);
-        });
-        
-        $greeting = new Greeting($this->app);
-        $this->app->route('GET /hello', [$greeting, 'hello']);
-
-        $this->app->route('GET /user', function () { // http://localhost/rest/flight/user/?jsonp=console.log
-            $user = new User($this->id);
-            $this->app->model()->setAdapter($user);
-
-            $users = $this->app->model()->getAll();
-            $response = [
-                'users' => $users,
-                'count' => count($users)
-            ];
-
-            $this->app->json(['response' => $response]);
-        }, false, true);
-
-        $this->app->route('GET /user/@id:[0-9]{1,10}', function ($id) {
-            $user = new User($this->id);
-            $this->app->model()->setAdapter($user);
-        
-            $userData = $this->app->model()->getById($id);
-            unset($userData['jwt']);
-            unset($userData['active']);
-            unset($userData['code']);
-
-            $response = ['user' => $userData];
-            $this->app->json(['response' => $response]);
-        }, false, true);
-
-        $this->app->route('GET|POST /user/@offset:[0-9]+/@limit:[0-9]+', function ($offset, $limit) {
-            $user = new User($this->id);
-            $this->app->model()->setAdapter($user);
-        
-            $users = $this->app->model()->getList($offset, $limit);
-            $response = [
-                'users' => $users,
-                'count' => count($users)
-            ];
-            $this->app->json(['response' => $response]);
-        }, false, true);
-    }
-    
-    public function start()
-    {
-        $this->map();
-        $this->before();
-        $this->after();
-
-        $this->init();
-
+        // $this->app->approuter()->init();
         $this->app->start();
     }
 }
