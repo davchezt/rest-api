@@ -1,14 +1,17 @@
 <IfModule mod_rewrite.c>
     RewriteEngine On
 
+    # Allow any files or directories that exist
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
 
-    RewriteRule ^(.*)$ index.php [QSA,L]
+    # Rewrite all other URLs to index.php/URL
+    RewriteRule ^(.*)$ index.php/$1 [QSA,L]
 
     # Rewrite directories to index.php/URL even though they exist.
     # Don't rewrite files so that we can still load CSS, etc.
     RewriteCond %{REQUEST_FILENAME} -f
+    RewriteCond %{REQUEST_URI} !\.log$
     RewriteRule .* - [S=5]
 </IfModule>
 

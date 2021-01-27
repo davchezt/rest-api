@@ -7,13 +7,15 @@
 
 namespace app;
 
+defined("__DAVCHEZT") or die("{ \"response\" : \"error 403\"}");
+
 use app\Lib\R;
 use app\Lib\Database;
 
 /* Kelas: SQL
  * Kelas bantuan untuk DB Class <db.php>
  */
- class SQL {
+class SQL {
     private static $dbc;
     public static $db;
     public static $cnf;

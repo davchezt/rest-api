@@ -10,6 +10,7 @@ use app\Lib\R;
 use app\Helper;
 
 date_default_timezone_set('Asia/Jakarta');
+define('__DAVCHEZT', true);
 
 define('__PATH', realpath(dirname(__FILE__)));
 define('__APP', __PATH . '/App');

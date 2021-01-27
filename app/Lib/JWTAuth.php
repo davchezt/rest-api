@@ -7,6 +7,8 @@
 
 namespace app\Lib;
 
+defined("__DAVCHEZT") or die("{ \"response\" : \"error 403\"}");
+
 use \Firebase\JWT\JWT;
 
 use app\Helper;

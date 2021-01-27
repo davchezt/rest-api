@@ -7,6 +7,8 @@
 
 namespace app\Lib;
 
+defined("__DAVCHEZT") or die("{ \"response\" : \"error 403\"}");
+
 class R {
 	private static $data = array();
 	public static function get($key, $default = null)

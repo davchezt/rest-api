@@ -37,6 +37,8 @@
 
 namespace app\Lib;
 
+defined("__DAVCHEZT") or die("{ \"response\" : \"error 403\"}");
+
 class Browser
 {
     private $_agent = '';

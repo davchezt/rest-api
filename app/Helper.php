@@ -7,6 +7,8 @@
 
 namespace app;
 
+defined("__DAVCHEZT") or die("{ \"response\" : \"error 403\"}");
+
 class Helper
 {
     public static function timeNow($unix = false, $time = false, $format = null)

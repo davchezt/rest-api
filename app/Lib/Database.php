@@ -7,6 +7,8 @@
 
 namespace app\Lib;
 
+defined("__DAVCHEZT") or die("{ \"response\" : \"error 403\"}");
+
 class Database {
 	private $db, $dsn, $user, $password;
 

@@ -7,6 +7,8 @@
 
 namespace app\Router;
 
+defined("__DAVCHEZT") or die("{ \"response\" : \"error 403\"}");
+
 use flight\Engine;
 
 use app\Adapter\UserAdapter;

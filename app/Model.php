@@ -7,6 +7,8 @@
 
 namespace app;
 
+defined("__DAVCHEZT") or die("{ \"response\" : \"error 403\"}");
+
 use app\ModelInterface;
 
 class Model
