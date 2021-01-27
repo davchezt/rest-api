@@ -7,8 +7,6 @@
 
 namespace app\Router;
 
-use flight\Engine;
-
 use app\BaseRouter;
 
 class Main extends BaseRouter
