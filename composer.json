@@ -19,7 +19,7 @@
                 "source": {
                     "url": "https://github.com/davchezt/flight.git",
                     "type": "git",
-                    "reference": "7e43f69"
+                    "reference": "6cd0fe7"
                 },
                 "autoload": {
                     "files": [

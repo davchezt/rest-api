@@ -25,7 +25,7 @@ class App
     {
         $this->app = $app;
 
-        $token = $this->app->request()->getToken();
+        $token = Helper::getToken();
         $header = JWTAuth::getHeader($token);
         if (count($header) > 0) {
             $this->id = $header['id'];
@@ -84,7 +84,7 @@ class App
         // MAP HOOK
         $this->app->map('route', function ($pattern, $callback, $pass_route = false, $secure = false) {
             if ($secure) {
-                $token = $this->app->request()->getToken();
+                $token = Helper::getToken();
                 if (JWTAuth::verifyToken($token)) {
                     $this->app->router()->map($pattern, $callback, $pass_route);
                 } else {
@@ -212,7 +212,7 @@ class App
             $params[0] = ['message' => $params[0], 'detail' => 'Token is invalid or expired'];
 
             if (R::get('config')['app']['debug']) {
-                $token = $this->app->request()->getToken();
+                $token = Helper::getToken();
                 $params[0] = array_merge($params[0], array('token' => $token));
             }
         });

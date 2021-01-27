@@ -51,23 +51,25 @@ class Helper
 
     public static function listingDir($path)
     {
-        if (empty($path)) $path = ".";
+        if (empty($path)) {
+            $path = ".";
+        }
     
         $fileList = $directoryList = array();
         $ignoreList = array(".", "..", ".htaccess");
         if (is_dir($path)) {
             $directoryHandle  = opendir($path);
-            while (false !== ($file = readdir($directoryHandle)))
-            {
-                if (in_array($file, $ignoreList)) continue;
+            while (false !== ($file = readdir($directoryHandle))) {
+                if (in_array($file, $ignoreList)) {
+                    continue;
+                }
                 if (is_dir($path . "/" . $file)) {
                     $directoryList["dirs"][] = array(
                         "file" => $file,
                         "location" => $path,
                         "type" => "dir"
                     );
-                }
-                else {
+                } else {
                     $fileList["files"][] = array(
                         "file" => $file,
                         "location" => $path,
@@ -82,5 +84,36 @@ class Helper
         $finalList = array_merge($directoryList, $fileList);
     
         return $finalList;
+    }
+
+    public static function getAuthorizationHeader()
+    {
+        $headers = null;
+        if (isset($_SERVER['Authorization'])) {
+            $headers = trim($_SERVER["Authorization"]);
+        } elseif (isset($_SERVER['HTTP_AUTHORIZATION'])) {
+            $headers = trim($_SERVER["HTTP_AUTHORIZATION"]);
+        } elseif (function_exists('apache_request_headers')) {
+            $requestHeaders = apache_request_headers();
+            $requestHeaders = array_combine(array_map('ucwords', array_keys($requestHeaders)), array_values($requestHeaders));
+  
+            if (isset($requestHeaders['Authorization'])) {
+                $headers = trim($requestHeaders['Authorization']);
+            }
+        }
+  
+        return $headers;
+    }
+
+    public static function getToken()
+    {
+        $headers = self::getAuthorizationHeader();
+        if (!empty($headers)) {
+            if (preg_match('/Bearer\s(\S+)/', $headers, $matches)) {
+                return $matches[1];
+            }
+        }
+    
+        return null;
     }
 }
