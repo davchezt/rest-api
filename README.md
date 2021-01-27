@@ -1,6 +1,6 @@
 # REST API
 
-Simple REST API using [fork](https://github.com/davchezt/flight) of [Flight Framework](https://github.com/mikecao/flight) + [PHP-JWT](https://github.com/firebase/php-jwt)
+Simple REST API using [Flight Framework](https://github.com/mikecao/flight) + [PHP-JWT](https://github.com/firebase/php-jwt)
 
 ## Requirements
 requires `PHP 5.3` or greater
