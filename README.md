@@ -32,7 +32,7 @@ config file: `config.php`
 ]
 ```
 
-### Mial SMTP Config
+### Mail SMTP Config
 ```php
 'mail' => [
     'host' => 'mail.domain.com',
@@ -118,7 +118,7 @@ public function getById($id = 0) : array
 }
 ```
 
-## USING MODEL
+## USE MODEL
 Example on __Main__ router `app/Router/Main.php`
 ```php
 public function init()
