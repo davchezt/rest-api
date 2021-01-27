@@ -6,11 +6,11 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <title>API Boilerplate</title>
+    <title>Flight REST API</title>
 
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css?family=Raleway:100,600" rel="stylesheet" type="text/css">
-
+    <link href="https://fonts.googleapis.com/css2?family=Mr+Dafoe&amp;family=Inter:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
     <!-- Styles -->
     <style>
         html,
@@ -48,7 +48,13 @@
         }
 
         .title {
+            font-family: 'Mr Dafoe', serif;
             font-size: 84px;
+        }
+
+        .title small {
+            font-family: 'Raleway', sans-serif;
+            font-size: 28px;
         }
 
         .title2 {
@@ -75,11 +81,11 @@
     <div class="flex-center position-ref full-height">
         <div class="content">
             <div class="title m-b-md">
-                REST API
+                Flight <small>REST API</small>
             </div>
 
             <div class="title2 m-b-md">
-            <?php echo  $version ?>
+                <?php echo $version ?>
             </div>
 
             <div class="links">

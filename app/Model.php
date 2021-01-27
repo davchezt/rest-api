@@ -16,18 +16,25 @@ class Model
     protected $adapter;
 
     public function __construct() {}
-	
-	public function setAdapter(ModelInterface $adapter)
-	{
-		$this->adapter = $adapter;
-	}
 
-	public function getAdapter()
-	{
-		return $this->adapter;
-	}
+    public function __call($methodName, $args)
+    {
+        if (method_exists($this->adapter, $methodName)) {
+            return call_user_func_array(array($this->adapter, $methodName), $args);
+        }
+    }
+    
+    public function setAdapter(ModelInterface $adapter)
+    {
+        $this->adapter = $adapter;
+    }
 
-	public function getById($id = 0)
+    public function getAdapter()
+    {
+        return $this->adapter;
+    }
+
+    public function getById($id = 0)
     {
         return $this->adapter->getById($id);
     }

@@ -57,6 +57,7 @@ class Mailer
 		$mail->AltBody		=	$text;
 		$mail->CharSet		=	'UTF-8';
 
+        $to = filter_var($to, FILTER_SANITIZE_EMAIL);
 		if (filter_var($to, FILTER_VALIDATE_EMAIL) !== false) {
 			$result = $mail->send();
 		} else {

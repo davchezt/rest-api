@@ -16,11 +16,18 @@ class Main extends BaseRouter
 {
     public function init()
     {
-        $this->app->route('/', function () {
-            // $this->app->json(['response' => ['data' => 'API Main']]);
+        $this->app->route('/', [$this, 'mainHTML']);
+        $this->app->route('/v1', [$this, 'mainJSON']);
+    }
 
-            $version = file_get_contents(R::get('path') . '/vendor/mikecao/flight/VERSION');
-            $this->app->render('index', array('version' => 'Flight framework (' . $version . ')'));
-        });
+    public function mainHTML()
+    {
+        $version = file_get_contents(R::get('path') . '/vendor/mikecao/flight/VERSION');
+        $this->app->render('index', array('version' => 'Flight Framework (' . $version . ')'));
+    }
+
+    public function mainJSON()
+    {
+        $this->app->json(['response' => ['data' => 'API version 1.0']]);
     }
 }

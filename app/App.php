@@ -107,7 +107,7 @@ class App
                 'error' => array(
                     'code' => $ex->getCode(),
                     'messsage' => $ex->getMessage() . ' at ' . $ex->getFile() . ':' . $ex->getLine(),
-                    'trace' => $ex->getTrace()
+                    'trace' => (R::get('config')['app']['debug']) ? $ex->getTrace() : 'disabled'
                 )
             );
             $this->app->json(['response' => $err], 500);
