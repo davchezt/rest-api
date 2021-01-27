@@ -2,17 +2,17 @@
 
 Simple REST API using [fork](https://github.com/davchezt/flight) of [Flight Framework](https://github.com/mikecao/flight) + [PHP-JWT](https://github.com/firebase/php-jwt)
 
-# Requirements
+## Requirements
 requires `PHP 5.3` or greater
 
-# INSTALL
+## INSTALL
 ```bash
 $ git clone https://github.com/davchezt/rest-api.git
 $ cd rest-api
 $ composer install
 ```
 
-# CONFIG
+## CONFIG
 config file: `config.php`
 
 ### App Config
@@ -42,7 +42,7 @@ config file: `config.php`
 ]
 ```
 
-# ROUTING
+## ROUTING
 Create new file and save to dir app/Router/
 
 ```php
@@ -71,7 +71,7 @@ class Main extends BaseRouter
 ?>
 ```
 
-# CREATING MODEL
+## CREATING MODEL
 Create new file and save to dir app/Adapter/
 
 ```php
@@ -102,7 +102,7 @@ class UserAdapter implements ModelInterface
 }
 ?>
 ```
-# USING MYSQL DATABASES ON MODEL
+## USING MYSQL DATABASES ON MODEL
 Example on __UserAdapter__ `app/Adapter/UserAdapter.php`
 ```php
 public function getById($id = 0) : array
@@ -118,7 +118,7 @@ public function getById($id = 0) : array
 }
 ```
 
-# USING MODEL
+## USING MODEL
 Example on __Main__ router `app/Router/Main.php`
 ```php
 public function init()
