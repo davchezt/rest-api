@@ -33,10 +33,9 @@ class UserAdapter extends BaseAdapter implements ModelInterface
             ->select_many('profile.name', 'profile.dob', 'profile.email', 'profile.gender', 'profile.address')
             ->left_outer_join('profile', array('profile.id_user', '=', 'user.id'))
             ->where_id_is($id)
-            ->limit(1)
-            ->find_array();
+            ->find_one();
 
-        return $result ? $result : [];
+        return $result ? $result->as_array() : [];
 
         /*SQL::open();
         $dbo = SQL::$db->prepare("SELECT `user`.`id`, `user`.`username`, `user`.`type`, `user`.`join_date`, `profile`.`name`, `profile`.`dob`, `profile`.`email`, `profile`.`gender`, `profile`.`address` FROM `user` LEFT JOIN `profile` ON (`profile`.`id_user` = `user`.`id`) WHERE `user`.`id` = :id LIMIT 1");
@@ -74,13 +73,13 @@ class UserAdapter extends BaseAdapter implements ModelInterface
     {
         $id = intval($this->id);
         $result = $this->orm()
-            ->select_many('user.id', 'user.username', 'user.type', 'user.join_date')
-            ->select_many('profile.name', 'profile.dob', 'profile.email', 'profile.gender', 'profile.address')
-            ->left_outer_join('profile', array('profile.id_user', '=', 'user.id'))
-            ->where_not_equal('user.id', $id)
-            ->where_gt('user.id', $offset)
-            ->limit($limit)
-            ->find_array();
+                ->select_many('user.id', 'user.username', 'user.type', 'user.join_date')
+                ->select_many('profile.name', 'profile.dob', 'profile.email', 'profile.gender', 'profile.address')
+                ->left_outer_join('profile', array('profile.id_user', '=', 'user.id'))
+                ->where_not_equal('user.id', $id)
+                ->where_gt('user.id', $offset)
+                ->limit($limit)
+                ->find_array();
 
         return $result;
 
@@ -98,12 +97,9 @@ class UserAdapter extends BaseAdapter implements ModelInterface
 
     public function getCount() : int
     {
-        $id = $this->id;
-        $type = 1;
+        $id = intval($this->id);
 
-        return (int)$this->orm()
-            ->where_not_equal('id', $id)
-            ->count();
+        return $this->orm()->where_not_equal('id', $id)->count();
     }
 
     public function addData($param = array()) : int
@@ -133,7 +129,14 @@ class UserAdapter extends BaseAdapter implements ModelInterface
             return $id;
         }
 
-        SQL::open();
+        $user = $this->orm()->where('username', $username)->find_one();
+        $pass = $user ? $user->get('password') : null;
+
+        if ($password == $pass) {
+            $id = (int)$user->get('id');
+        }
+
+        /*SQL::open();
         $dbp = SQL::$db->query("SELECT `password` FROM `user` WHERE `username` = '{$username}'");
         $pass = $dbp->fetchColumn();
 
@@ -141,17 +144,21 @@ class UserAdapter extends BaseAdapter implements ModelInterface
             $userId = SQL::$db->query("SELECT `id` FROM `user` WHERE `username` = '{$username}'");
             $id = (int)$userId->fetchColumn();
         }
-        SQL::close();
+        SQL::close();*/
 
         return $id;
     }
 
     public function checkUsername($username)
     {
-        SQL::open();
+        $id = intval($this->id);
+
+        $count = $this->orm()->where('username', $username)->count();
+
+        /*SQL::open();
         $dbc = SQL::$db->query("SELECT COUNT(*) FROM `user` WHERE `username` = '{$username}'");
         $count = (int)$dbc->fetchColumn();
-        SQL::close();
+        SQL::close();*/
 
         if ($count != 0) {
             return true;
@@ -162,10 +169,14 @@ class UserAdapter extends BaseAdapter implements ModelInterface
 
     public function checkEmail($email)
     {
-        SQL::open();
+        $id = intval($this->id);
+
+        $count = $this->orm('profile')->where('email', $email)->count();
+
+        /*SQL::open();
         $dbc = SQL::$db->query("SELECT COUNT(*) FROM `profile` WHERE `email` = '{$email}'");
         $count = (int)$dbc->fetchColumn();
-        SQL::close();
+        SQL::close();*/
 
         if ($count != 0) {
             return true;
@@ -177,16 +188,42 @@ class UserAdapter extends BaseAdapter implements ModelInterface
     public function registerUser($username, $password, $name, $dob, $email, $gender, $address)
     {
         try {
-            SQL::open();
+            $user = $this->orm()->create();
+            $user->id = null;
+            $user->username = $username;
+            $user->password = $password;
+            $user->set('type', 0);
+            $user->set_expr('join_date', 'NOW()');
+            $user->save();
+
+            $id = $user->id();
+
+            /*SQL::open();
             $anu = SQL::$db->prepare("INSERT INTO `user` (`id`, `username`, `password`, `type`, `join_date`) VALUES(null, :username, :password, '0', NOW())");
             $anu->bindParam(':username', $username, \PDO::PARAM_STR, 12);
             $anu->bindParam(':password', $password, \PDO::PARAM_STR, 12);
             $anu->execute();
             $id = SQL::$db->lastInsertId();
-            SQL::close();
+            SQL::close();*/
 
-            if ($id) {
-                SQL::open();
+            if ($id || $user->is_dirty('id')) { // is_dirty only for update
+
+                $profile = $this->orm('profile')->create();
+                $profile->id_user = $id;
+                $profile->name = $name;
+                $profile->dob = $dob;
+                $profile->email = $email;
+                $profile->gender = $gender;
+                $profile->address = $address;
+                $profile->save();
+
+                if ($profile->id() || $profile->is_dirty('id')) { // is_dirty only for update
+                    return $id;
+                }
+
+                return -1;
+    
+                /*SQL::open();
                 $anu = SQL::$db->prepare("INSERT INTO `profile` (`id`, `id_user`, `name`, `dob`, `email`, `gender`, `address`) VALUES (NULL, :uid, :name, :dob, :email, :gender, :address)");
                 $anu->bindParam(':uid', $id, \PDO::PARAM_INT);
                 $anu->bindParam(':name', $name, \PDO::PARAM_STR, 12);
@@ -197,7 +234,7 @@ class UserAdapter extends BaseAdapter implements ModelInterface
                 $anu->execute();
                 SQL::close();
 
-                return $id;
+                return $id;*/
             }
         } catch (\PDOException $ex) {
             // $ex->getMessage()
