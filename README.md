@@ -18,8 +18,10 @@ config file: `config.php`
 ### App Config
 ```php
 'app' => [
-    'debug' => true,
-    'secret' => 'your-jwt-secret'
+    'hash' => 'DaVchezt', // password hash
+    'debug' => false, // show debug request
+    'log' => true, // write log to file
+    'secret' => 'U0hiqmizT7repIgy3wX1uJv6R3T8YtskNcZmF7ClH2ajBtE4nF8WXQGNAw5b3VVe'
 ]
 ```
 
@@ -104,6 +106,8 @@ class UserAdapter implements ModelInterface
 ```
 ## USING MYSQL DATABASES ON MODEL
 Example on __UserAdapter__ `app/Adapter/UserAdapter.php`
+
+### Example PDO
 ```php
 public function getById($id = 0) : array
 {
@@ -115,6 +119,17 @@ public function getById($id = 0) : array
     SQL::close();
     
     return $user ? (array)$user : [];
+}
+```
+### Example ORM (idiorm)
+```php
+public function getById($id = 0) : array
+{
+    $id = intval($this->id);
+
+    return $this->orm()
+                ->select_many('user.id', 'user.username ...')
+                ->find_one($id);
 }
 ```
 

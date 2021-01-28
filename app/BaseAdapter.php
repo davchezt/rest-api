@@ -20,8 +20,12 @@ class BaseAdapter
         }
     }
 
-    protected function orm()
+    protected function orm($tableName = '')
     {
+        if ($tableName) {
+            return \ORM::for_table($tableName);
+        }
+
         return $this->table;
     }
 }

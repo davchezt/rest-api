@@ -123,7 +123,7 @@ class App
     }
 
     public function notFoundMap()
-    {        
+    {
         $this->app->json(['response' => 'Error 404'], 404);
     }
 
