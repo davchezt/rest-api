@@ -36,15 +36,6 @@ class UserAdapter extends BaseAdapter implements ModelInterface
             ->find_one();
 
         return $result ? $result->as_array() : [];
-
-        /*SQL::open();
-        $dbo = SQL::$db->prepare("SELECT `user`.`id`, `user`.`username`, `user`.`type`, `user`.`join_date`, `profile`.`name`, `profile`.`dob`, `profile`.`email`, `profile`.`gender`, `profile`.`address` FROM `user` LEFT JOIN `profile` ON (`profile`.`id_user` = `user`.`id`) WHERE `user`.`id` = :id LIMIT 1");
-        $dbo->bindValue(':id', $id, \PDO::PARAM_INT);
-        $dbo->execute();
-        $user = $dbo->fetch(\PDO::FETCH_OBJ);
-        SQL::close();
-      
-        return $user ? (array)$user : [];*/
     }
 
     public function getAll() : array
@@ -58,15 +49,6 @@ class UserAdapter extends BaseAdapter implements ModelInterface
             ->find_array();
 
         return $result;
-
-        /*SQL::open();
-        $dbo = SQL::$db->prepare("SELECT `user`.`id`, `user`.`username`, `user`.`type`, `user`.`join_date`, `profile`.`name`, `profile`.`dob`, `profile`.`email`, `profile`.`gender`, `profile`.`address` FROM `user` LEFT JOIN `profile` ON (`profile`.`id_user` = `user`.`id`) WHERE `user`.`id` <> :id ORDER BY `id`");
-        $dbo->bindValue(':id', $this->id, \PDO::PARAM_INT);
-        $dbo->execute();
-        $users = $dbo->fetchAll(\PDO::FETCH_ASSOC);
-        SQL::close();
-
-        return (array)$users;*/
     }
 
     public function getList($offset = 0, $limit = 30) : array
@@ -82,17 +64,6 @@ class UserAdapter extends BaseAdapter implements ModelInterface
                 ->find_array();
 
         return $result;
-
-        /*SQL::open();
-        $dbo = SQL::$db->prepare("SELECT `user`.`id`, `user`.`username`, `user`.`type`, `user`.`join_date`, `profile`.`name`, `profile`.`dob`, `profile`.`email`, `profile`.`gender`, `profile`.`address` FROM `user` LEFT JOIN `profile` ON (`profile`.`id_user` = `user`.`id`) WHERE `user`.`id` <> :id AND `user`.`id` > :offset ORDER BY `id` ASC LIMIT :limit");
-        $dbo->bindValue(':id', $this->id, \PDO::PARAM_INT);
-        $dbo->bindParam(':offset', $offset, \PDO::PARAM_INT);
-        $dbo->bindParam(':limit', $limit, \PDO::PARAM_INT);
-        $dbo->execute();
-        $users = $dbo->fetchAll(\PDO::FETCH_ASSOC);
-        SQL::close();
-
-        return (array)$users;*/
     }
 
     public function getCount() : int
@@ -140,16 +111,6 @@ class UserAdapter extends BaseAdapter implements ModelInterface
             $id = (int)$user->get('id');
         }
 
-        /*SQL::open();
-        $dbp = SQL::$db->query("SELECT `password` FROM `user` WHERE `username` = '{$username}'");
-        $pass = $dbp->fetchColumn();
-
-        if ($password == $pass) {
-            $userId = SQL::$db->query("SELECT `id` FROM `user` WHERE `username` = '{$username}'");
-            $id = (int)$userId->fetchColumn();
-        }
-        SQL::close();*/
-
         return $id;
     }
 
@@ -158,11 +119,6 @@ class UserAdapter extends BaseAdapter implements ModelInterface
         $id = intval($this->id);
 
         $count = $this->orm()->where('username', $username)->count();
-
-        /*SQL::open();
-        $dbc = SQL::$db->query("SELECT COUNT(*) FROM `user` WHERE `username` = '{$username}'");
-        $count = (int)$dbc->fetchColumn();
-        SQL::close();*/
 
         if ($count != 0) {
             return true;
@@ -176,11 +132,6 @@ class UserAdapter extends BaseAdapter implements ModelInterface
         $id = intval($this->id);
 
         $count = $this->orm('profile')->where('email', $email)->count();
-
-        /*SQL::open();
-        $dbc = SQL::$db->query("SELECT COUNT(*) FROM `profile` WHERE `email` = '{$email}'");
-        $count = (int)$dbc->fetchColumn();
-        SQL::close();*/
 
         if ($count != 0) {
             return true;
@@ -202,14 +153,6 @@ class UserAdapter extends BaseAdapter implements ModelInterface
 
             $id = $user->id();
 
-            /*SQL::open();
-            $anu = SQL::$db->prepare("INSERT INTO `user` (`id`, `username`, `password`, `type`, `join_date`) VALUES(null, :username, :password, '0', NOW())");
-            $anu->bindParam(':username', $username, \PDO::PARAM_STR, 12);
-            $anu->bindParam(':password', $password, \PDO::PARAM_STR, 12);
-            $anu->execute();
-            $id = SQL::$db->lastInsertId();
-            SQL::close();*/
-
             if ($id || $user->is_dirty('id')) { // is_dirty only for update
 
                 $profile = $this->orm('profile')->create();
@@ -226,19 +169,6 @@ class UserAdapter extends BaseAdapter implements ModelInterface
                 }
 
                 return -1;
-    
-                /*SQL::open();
-                $anu = SQL::$db->prepare("INSERT INTO `profile` (`id`, `id_user`, `name`, `dob`, `email`, `gender`, `address`) VALUES (NULL, :uid, :name, :dob, :email, :gender, :address)");
-                $anu->bindParam(':uid', $id, \PDO::PARAM_INT);
-                $anu->bindParam(':name', $name, \PDO::PARAM_STR, 12);
-                $anu->bindParam(':dob', $dob, \PDO::PARAM_STR, 12);
-                $anu->bindParam(':email', $email, \PDO::PARAM_STR, 12);
-                $anu->bindParam(':gender', $gender, \PDO::PARAM_STR, 12);
-                $anu->bindParam(':address', $address, \PDO::PARAM_STR, 12);
-                $anu->execute();
-                SQL::close();
-
-                return $id;*/
             }
         } catch (\PDOException $ex) {
             // $ex->getMessage()

@@ -106,22 +106,6 @@ class UserAdapter implements ModelInterface
 ```
 ## USING MYSQL DATABASES ON MODEL
 Example on __UserAdapter__ `app/Adapter/UserAdapter.php`
-
-### Example PDO
-```php
-public function getById($id = 0) : array
-{
-    SQL::open();
-    $dbo = SQL::$db->prepare("SELECT `user`.* ... WHERE `user`.`id` = :id");
-    $dbo->bindValue(':id', $id, \PDO::PARAM_INT);
-    $dbo->execute();
-    $user = $dbo->fetch(\PDO::FETCH_OBJ);
-    SQL::close();
-    
-    return $user ? (array)$user : [];
-}
-```
-### Example ORM (idiorm)
 ```php
 public function getById($id = 0) : array
 {
