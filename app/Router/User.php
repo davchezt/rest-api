@@ -61,7 +61,7 @@ class User extends BaseRouter
         $users = $this->app->model()->getAll();
         $response = [
             'data' => $users,
-            'count' => count($users)
+            'count' =>  $this->app->model()->getCount()// count($users)
         ];
 
         $this->app->json(['response' => $response]);

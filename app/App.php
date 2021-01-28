@@ -36,10 +36,29 @@ class App
             $this->id = $header['id'];
         }
 
+        $this->configureDatabase();
         $this->initRouter();
 
         // echo JWTAuth::getToken('1', 'davchezt', '7 days'); exit;
         // echo JWTAuth::getToken('2', 'vchezt', '7 days'); exit;
+    }
+
+    public function configureDatabase()
+    {
+        $cnf = R::get('config');
+
+        \ORM::configure($cnf['db']['dsn']);
+        \ORM::configure('username', $cnf['db']['dbu']);
+        \ORM::configure('password', $cnf['db']['dbp']);
+        \ORM::configure('error_mode', \PDO::ERRMODE_EXCEPTION);
+        \ORM::configure('driver_options', array(\PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES utf8mb4'));
+
+        \ORM::configure('return_result_sets', true);
+        \ORM::configure('logger', function($log_string, $query_time) {
+            // echo $log_string . ' in ' . $query_time;
+        });
+        \ORM::configure('caching', true);
+        \ORM::configure('caching_auto_clear', true);
     }
 
     public function initRouter()

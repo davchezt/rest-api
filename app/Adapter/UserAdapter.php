@@ -9,46 +9,83 @@ namespace app\Adapter;
 
 defined("__DAVCHEZT") or die("{ \"response\" : \"error 403\"}");
 
+use app\BaseAdapter;
 use app\ModelInterface;
 use app\SQL;
+use ORM;
 
-class UserAdapter implements ModelInterface
+class UserAdapter extends BaseAdapter implements ModelInterface
 {
     private $id = 0;
 
     public function __construct($ignoreId)
     {
+        parent::__construct('user');
+
         $this->id = $ignoreId;
     }
 
     public function getById($id = 0) : array
     {
-        SQL::open();
+        $id = intval($id);
+        $result = $this->orm()
+            ->select_many('user.id', 'user.username', 'user.type', 'user.join_date')
+            ->select_many('profile.name', 'profile.dob', 'profile.email', 'profile.gender', 'profile.address')
+            ->left_outer_join('profile', array('profile.id_user', '=', 'user.id'))
+            ->where_id_is($id)
+            ->limit(1)
+            ->find_array();
+
+        return $result ? $result : [];
+
+        /*SQL::open();
         $dbo = SQL::$db->prepare("SELECT `user`.`id`, `user`.`username`, `user`.`type`, `user`.`join_date`, `profile`.`name`, `profile`.`dob`, `profile`.`email`, `profile`.`gender`, `profile`.`address` FROM `user` LEFT JOIN `profile` ON (`profile`.`id_user` = `user`.`id`) WHERE `user`.`id` = :id LIMIT 1");
         $dbo->bindValue(':id', $id, \PDO::PARAM_INT);
         $dbo->execute();
         $user = $dbo->fetch(\PDO::FETCH_OBJ);
         SQL::close();
       
-        return $user ? (array)$user : [];
+        return $user ? (array)$user : [];*/
     }
 
     public function getAll() : array
     {
-        SQL::open();
+        $id = intval($this->id);
+        $result = $this->orm()
+            ->select_many('user.id', 'user.username', 'user.type', 'user.join_date')
+            ->select_many('profile.name', 'profile.dob', 'profile.email', 'profile.gender', 'profile.address')
+            ->left_outer_join('profile', array('profile.id_user', '=', 'user.id'))
+            ->where_not_equal('user.id', $id)
+            ->find_array();
+
+        return $result;
+
+        /*SQL::open();
         $dbo = SQL::$db->prepare("SELECT `user`.`id`, `user`.`username`, `user`.`type`, `user`.`join_date`, `profile`.`name`, `profile`.`dob`, `profile`.`email`, `profile`.`gender`, `profile`.`address` FROM `user` LEFT JOIN `profile` ON (`profile`.`id_user` = `user`.`id`) WHERE `user`.`id` <> :id ORDER BY `id`");
         $dbo->bindValue(':id', $this->id, \PDO::PARAM_INT);
         $dbo->execute();
         $users = $dbo->fetchAll(\PDO::FETCH_ASSOC);
         SQL::close();
 
-        return (array)$users;
+        return (array)$users;*/
     }
 
     public function getList($offset = 0, $limit = 30) : array
     {
-        SQL::open();
-        $dbo = SQL::$db->prepare("SELECT `user`.`id`, `user`.`username`, `user`.`type`, `user`.`join_date`, `profile`.`name`, `profile`.`dob`, `profile`.`email`, `profile`.`gender`, `profile`.`address` FROM `user` LEFT JOIN `profile` ON (`profile`.`id_user` = `user`.`id`) WHERE `user`.`id` <> :id ORDER BY `id` ASC LIMIT :offset, :limit");
+        $id = intval($this->id);
+        $result = $this->orm()
+            ->select_many('user.id', 'user.username', 'user.type', 'user.join_date')
+            ->select_many('profile.name', 'profile.dob', 'profile.email', 'profile.gender', 'profile.address')
+            ->left_outer_join('profile', array('profile.id_user', '=', 'user.id'))
+            ->where_not_equal('user.id', $id)
+            ->where_gt('user.id', $offset)
+            ->limit($limit)
+            ->find_array();
+
+        return $result;
+
+        /*SQL::open();
+        $dbo = SQL::$db->prepare("SELECT `user`.`id`, `user`.`username`, `user`.`type`, `user`.`join_date`, `profile`.`name`, `profile`.`dob`, `profile`.`email`, `profile`.`gender`, `profile`.`address` FROM `user` LEFT JOIN `profile` ON (`profile`.`id_user` = `user`.`id`) WHERE `user`.`id` <> :id AND `user`.`id` > :offset ORDER BY `id` ASC LIMIT :limit");
         $dbo->bindValue(':id', $this->id, \PDO::PARAM_INT);
         $dbo->bindParam(':offset', $offset, \PDO::PARAM_INT);
         $dbo->bindParam(':limit', $limit, \PDO::PARAM_INT);
@@ -56,20 +93,17 @@ class UserAdapter implements ModelInterface
         $users = $dbo->fetchAll(\PDO::FETCH_ASSOC);
         SQL::close();
 
-        return (array)$users;
+        return (array)$users;*/
     }
 
     public function getCount() : int
     {
         $id = $this->id;
-        $type = 0;
+        $type = 1;
 
-        SQL::open();
-        $dbq = SQL::$db->query("SELECT COUNT(*) FROM `user` WHERE `user`.`type` = '{$type}' AND `user`.`id` <> '{$id}'");
-        $count = $dbq->fetchColumn();
-        SQL::close();
-
-        return $count;
+        return (int)$this->orm()
+            ->where_not_equal('id', $id)
+            ->count();
     }
 
     public function addData($param = array()) : int
