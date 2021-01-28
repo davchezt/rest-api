@@ -82,7 +82,7 @@ class User extends BaseRouter
         $body = json_decode($this->app->request()->getBody(), true);
         list($username, $password) = array_values($body);
 
-        $password = md5(R::get('config')['app']['hash'] . '.' . $password);
+        $password = md5(R::get('app.config')['app']['hash'] . '.' . $password);
         // $logdin = $this->app->model()->getAdapter()->checkLogin($username, $password); // using adapter
         
         $logdin = $this->app->model()->checkLogin($username, $password); // magic __call
@@ -134,7 +134,7 @@ class User extends BaseRouter
             return;
         }
 
-        $password = md5(R::get('config')['app']['hash'] . '.' . $password);
+        $password = md5(R::get('app.config')['app']['hash'] . '.' . $password);
         $dob = $place . ', ' . $day . '-' . $month . '-' . $year;
         $lastInsertId = $this->app->model()->registerUser($username, $password, $name, $dob, $email, $gender, $address);
         $token = ($lastInsertId != -1) ? JWTAuth::getToken(strval($lastInsertId), $username, '7 days') : null;

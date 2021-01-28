@@ -30,7 +30,7 @@ class JWTAuth
     public static function getToken($id, $user, $period = '12 hours')
     {
         // config secret
-        $secret = R::get('config')['app']['secret'];
+        $secret = R::get('app.config')['app']['secret'];
 
         // date now
         $iat = Helper::timeNow(false, false, 'Y-m-d H:i:s');
@@ -87,7 +87,7 @@ class JWTAuth
     {
         try {
             // config secret
-            $secret = R::get('config')['app']['secret'];
+            $secret = R::get('app.config')['app']['secret'];
 
             // decode token
             $obj = JWT::decode($token, $secret, array('HS256'));
