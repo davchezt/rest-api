@@ -22,6 +22,7 @@ class App
     protected $id = 1;
     protected $token = null;
     protected $routers = [];
+    protected $startTime;
 
     public function __construct(Engine $app)
     {
@@ -40,6 +41,8 @@ class App
         Logger::configure(R::get('logs'));
         $this->configureDatabase();
         $this->initRouter();
+
+        $this->startTime = microtime(true);
 
         // echo JWTAuth::getToken('1', 'davchezt', '7 days'); exit;
         // echo JWTAuth::getToken('2', 'vchezt', '7 days'); exit;
@@ -107,6 +110,13 @@ class App
         }
     }
 
+    protected function getResponseTime()
+    {
+        $endTime = microtime(true);
+
+        return round($endTime - $this->startTime, 3);
+    }
+
     public function routeMap($pattern, $callback, $pass_route = false, $secure = false)
     {
         if ($secure) {
@@ -168,7 +178,8 @@ class App
         $data = array_merge([
             'status' => $status,
             'message' => $message,
-            'timestamp' => Helper::timeNow()
+            'timestamp' => Helper::timeNow(),
+            'response_time' => $this->getResponseTime() . ' sec'
         ], $data);
 
         $json = ($encode) ? json_encode($data, $option) : $data;
@@ -188,10 +199,13 @@ class App
         $status = $response->status();
         $message = $response->message();
         
+        $endTime = microtime(true);
+        $requstTime = round($endTime - $this->startTime, 5);
         $data = array_merge([
             'status' => $status,
             'message' => $message,
-            'timestamp' => Helper::timeNow()
+            'timestamp' => Helper::timeNow(),
+            'response_time' => $this->getResponseTime() . ' sec'
         ], $data);
 
         $callback = $this->app->request()->query[$param];
