@@ -19,7 +19,6 @@ define('__VIEW', __PATH . '/resource/view');
 define('__LOG', __PATH . '/logs');
 
 require 'vendor/autoload.php';
-require 'app/autoload.php';
 
 R::set('config', require 'config.php');
 R::set('path', __PATH);
