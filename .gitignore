@@ -1,4 +1,5 @@
 .idea
+logs/
 vendor/
 composer.phar
 composer.lock

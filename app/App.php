@@ -12,6 +12,7 @@ defined("__DAVCHEZT") or die("{ \"response\" : \"error 403\"}");
 use flight\Engine;
 
 use app\Helper;
+use app\Logger;
 use app\Lib\R;
 use app\Lib\JWTAuth;
 
@@ -36,6 +37,7 @@ class App
             $this->id = $header['id'];
         }
 
+        Logger::configure(R::get('logs'));
         $this->configureDatabase();
         $this->initRouter();
 
@@ -54,8 +56,10 @@ class App
         \ORM::configure('driver_options', array(\PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES utf8mb4'));
 
         \ORM::configure('return_result_sets', true);
+        \ORM::configure('logging', R::get('config')['app']['log']);
         \ORM::configure('logger', function($log_string, $query_time) {
-            // echo $log_string . ' in ' . $query_time;
+            $message = 'ORM ' . $log_string . ' in ' . $query_time;
+            Logger::write($message, 'orm');
         });
         \ORM::configure('caching', true);
         \ORM::configure('caching_auto_clear', true);
@@ -119,8 +123,16 @@ class App
     }
 
     public function notFoundMap()
-    {
+    {        
         $this->app->json(['response' => 'Error 404'], 404);
+    }
+
+    public function afterNotFound()
+    {
+        if (R::get('config')['app']['log']) {
+            $message = $this->app->request()->getMethod() . ': ' . $this->app->request()->url . ' -- ' . $this->app->response()->status() . ' [' . $this->app->request()->ip . ']';
+            Logger::write($message, 'notfound');
+        }
     }
 
     public function errorMap(/*\Exception */$ex)
@@ -132,6 +144,11 @@ class App
                 'trace' => (R::get('config')['app']['debug']) ? $ex->getTrace() : 'disabled'
             )
         );
+
+        if (R::get('config')['app']['log']) {
+            $message = 'ERROR ' . $ex->getCode() . ': ' . $ex->getMessage() . ' at ' . $ex->getFile() . ':' . $ex->getLine() . ' [' . $this->app->request()->ip . ']';
+            Logger::write($message, 'error');
+        }
         $this->app->json(['response' => $err], 500);
     }
 
@@ -208,6 +225,14 @@ class App
         $this->loadRouters();
     }
 
+    public function afetrStart()
+    {
+        if (R::get('config')['app']['log'] && $this->app->response()->status() != 404) {
+            $message = $this->app->request()->getMethod() . ': ' . $this->app->request()->url . ' -- ' . $this->app->response()->status() . ' [' . $this->app->request()->ip . ']';
+            Logger::write($message, 'route');
+        }
+    }
+
     public function beforeJson()
     {
         if (R::get('config')['app']['debug']) {
@@ -258,6 +283,8 @@ class App
 
         // AFTER HOOK
         $this->app->after('notAuthorized', [$this, 'afterNotAuthorized']);
+        $this->app->after('notFound', [$this, 'afterNotFound']);
+        $this->app->after('start', [$this, 'afetrStart']);
 
         // $this->app->approuter()->init();
         $this->app->start();
