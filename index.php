@@ -20,11 +20,11 @@ define('__LOG', __PATH . '/logs');
 
 require 'vendor/autoload.php';
 
-R::set('config', require 'config.php');
-R::set('path', __PATH);
-R::set('routers', __RT);
-R::set('views', __VIEW);
-R::set('logs', __LOG);
+R::set('app.config', require 'config.php');
+R::set('app.path.base', __PATH);
+R::set('app.path.routers', __RT);
+R::set('app.path.views', __VIEW);
+R::set('app.path.logs', __LOG);
 
 $app = new App(new flight\Engine);
 $app->start();

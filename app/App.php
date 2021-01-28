@@ -22,6 +22,8 @@ class App
     protected $id = 1;
     protected $token = null;
     protected $routers = [];
+    protected $startTime;
+    protected $config = [];
 
     public function __construct(Engine $app)
     {
@@ -29,7 +31,8 @@ class App
 
         $this->app->register('request', 'app\Net\AppRequest');
         $this->app->register('response', 'app\Net\AppResponse');
-        $this->app->set('flight.views.path', R::get('views'));
+
+        $this->app->set('flight.views.path', R::get('app.path.views'));
 
         $this->token = $this->app->request()->getToken();
         $header = JWTAuth::getHeader($this->token);
@@ -37,9 +40,13 @@ class App
             $this->id = $header['id'];
         }
 
-        Logger::configure(R::get('logs'));
+        $this->config = R::get('app.config');
+
+        Logger::configure(R::get('app.path.logs'));
         $this->configureDatabase();
         $this->initRouter();
+
+        $this->startTime = microtime(true);
 
         // echo JWTAuth::getToken('1', 'davchezt', '7 days'); exit;
         // echo JWTAuth::getToken('2', 'vchezt', '7 days'); exit;
@@ -47,16 +54,14 @@ class App
 
     public function configureDatabase()
     {
-        $cnf = R::get('config');
-
-        \ORM::configure($cnf['db']['dsn']);
-        \ORM::configure('username', $cnf['db']['dbu']);
-        \ORM::configure('password', $cnf['db']['dbp']);
+        \ORM::configure($this->config['db']['dsn']);
+        \ORM::configure('username', $this->config['db']['dbu']);
+        \ORM::configure('password', $this->config['db']['dbp']);
         \ORM::configure('error_mode', \PDO::ERRMODE_EXCEPTION);
         \ORM::configure('driver_options', array(\PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES utf8mb4'));
 
         \ORM::configure('return_result_sets', true);
-        \ORM::configure('logging', R::get('config')['app']['log']);
+        \ORM::configure('logging', $this->config['app']['log']);
         \ORM::configure('logger', function($log_string, $query_time) {
             $message = 'ORM ' . $log_string . ' in ' . $query_time;
             Logger::write($message, 'orm');
@@ -67,7 +72,7 @@ class App
 
     public function initRouter()
     {
-        $exts = Helper::listingDir(R::get('routers'));
+        $exts = Helper::listingDir(R::get('app.path.routers'));
         if (count($exts) != 0) {
             foreach ($exts['files'] as $ext) {
                 if (file_exists($ext['location'] . '/' . $ext['file'])) {
@@ -107,6 +112,13 @@ class App
         }
     }
 
+    protected function getResponseTime()
+    {
+        $endTime = microtime(true);
+
+        return round($endTime - $this->startTime, 3);
+    }
+
     public function routeMap($pattern, $callback, $pass_route = false, $secure = false)
     {
         if ($secure) {
@@ -129,7 +141,7 @@ class App
 
     public function afterNotFound()
     {
-        if (R::get('config')['app']['log']) {
+        if ($this->config['app']['log']) {
             $message = $this->app->request()->getMethod() . ': ' . $this->app->request()->url . ' -- ' . $this->app->response()->status() . ' [' . $this->app->request()->ip . ']';
             Logger::write($message, 'notfound');
         }
@@ -141,11 +153,11 @@ class App
             'error' => array(
                 'code' => $ex->getCode(),
                 'messsage' => $ex->getMessage() . ' at ' . $ex->getFile() . ':' . $ex->getLine(),
-                'trace' => (R::get('config')['app']['debug']) ? $ex->getTrace() : 'disabled'
+                'trace' => ($this->config['app']['debug']) ? $ex->getTrace() : 'disabled'
             )
         );
 
-        if (R::get('config')['app']['log']) {
+        if ($this->config['app']['log']) {
             $message = 'ERROR ' . $ex->getCode() . ': ' . $ex->getMessage() . ' at ' . $ex->getFile() . ':' . $ex->getLine() . ' [' . $this->app->request()->ip . ']';
             Logger::write($message, 'error');
         }
@@ -168,7 +180,8 @@ class App
         $data = array_merge([
             'status' => $status,
             'message' => $message,
-            'timestamp' => Helper::timeNow()
+            'timestamp' => Helper::timeNow(),
+            'response_time' => $this->getResponseTime() . ' sec'
         ], $data);
 
         $json = ($encode) ? json_encode($data, $option) : $data;
@@ -188,10 +201,13 @@ class App
         $status = $response->status();
         $message = $response->message();
         
+        $endTime = microtime(true);
+        $requstTime = round($endTime - $this->startTime, 5);
         $data = array_merge([
             'status' => $status,
             'message' => $message,
-            'timestamp' => Helper::timeNow()
+            'timestamp' => Helper::timeNow(),
+            'response_time' => $this->getResponseTime() . ' sec'
         ], $data);
 
         $callback = $this->app->request()->query[$param];
@@ -227,7 +243,7 @@ class App
 
     public function afetrStart()
     {
-        if (R::get('config')['app']['log'] && $this->app->response()->status() != 404) {
+        if ($this->config['app']['log'] && $this->app->response()->status() != 404) {
             $message = $this->app->request()->getMethod() . ': ' . $this->app->request()->url . ' -- ' . $this->app->response()->status() . ' [' . $this->app->request()->ip . ']';
             Logger::write($message, 'route');
         }
@@ -235,7 +251,7 @@ class App
 
     public function beforeJson()
     {
-        if (R::get('config')['app']['debug']) {
+        if ($this->config['app']['debug']) {
             $params[0] = [
                 'request' => [
                     'method' => $this->app->request()->getMethod(),
@@ -255,7 +271,7 @@ class App
     {
         $params[0] = ['message' => $params[0], 'detail' => 'Token is invalid or expired'];
 
-        if (R::get('config')['app']['debug']) {
+        if ($this->config['app']['debug']) {
             $params[0] = array_merge($params[0], array('token' => $this->token));
         }
     }

@@ -32,7 +32,7 @@ class Mailer
 	public static function send($to, $name, $subject, $html, $text)
 	{
 		$mail = new PHPMailer(true);						// Passing `true` enables exceptions
-        $config = R::get('config')['mail'];
+        $config = R::get('app.config')['mail'];
 
 		//Server settings
 		$mail->SMTPDebug	=	0;							// Enable verbose debug output
