@@ -1,6 +1,6 @@
 # REST API
 
-Simple REST API using [Flight Framework](https://github.com/mikecao/flight) + [PHP-JWT](https://github.com/firebase/php-jwt)
+Simple REST API using [Flight Framework](https://github.com/mikecao/flight) + [PHP-JWT](https://github.com/firebase/php-jwt) + [Idiorm](https://github.com/j4mie/idiorm)
 
 ## Requirements
 requires `PHP 5.3` or greater
