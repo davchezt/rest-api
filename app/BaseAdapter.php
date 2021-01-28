@@ -28,4 +28,9 @@ class BaseAdapter
 
         return $this->table;
     }
+
+    protected function raw($query)
+    {
+        return \ORM::raw_execute($query);
+    }
 }

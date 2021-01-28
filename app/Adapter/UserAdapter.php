@@ -119,7 +119,11 @@ class UserAdapter extends BaseAdapter implements ModelInterface
 
     public function clearData() : void
     {
-        // nothing
+        // WARNING
+        $query = "TRUNCATE `user`";
+        if ($this->raw($query)) {
+            // OK
+        }
     }
 
     public function checkLogin($username, $password)
