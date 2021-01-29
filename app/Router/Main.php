@@ -10,7 +10,6 @@ namespace app\Router;
 defined("__DAVCHEZT") or die("{ \"response\" : \"error 403\"}");
 
 use app\BaseRouter;
-use app\Lib\R;
 
 class Main extends BaseRouter
 {
@@ -22,7 +21,7 @@ class Main extends BaseRouter
 
     public function mainHTML()
     {
-        $version = file_get_contents(R::get('app.path.base') . '/vendor/mikecao/flight/VERSION');
+        $version = file_get_contents($this->app->request()->path() . '/vendor/mikecao/flight/VERSION');
         $this->app->render('index', array('version' => 'Flight Framework (' . $version . ')'));
     }
 

@@ -14,9 +14,6 @@ use flight\Engine;
 use app\BaseRouter;
 use app\Adapter\UserAdapter;
 
-use app\Lib\R;
-use app\Lib\JWTAuth;
-
 class User extends BaseRouter
 {
     public function __construct(Engine $app, $userId)
@@ -82,11 +79,11 @@ class User extends BaseRouter
         $body = json_decode($this->app->request()->getBody(), true);
         list($username, $password) = array_values($body);
 
-        $password = md5(R::get('app.config')['app']['hash'] . '.' . $password);
+        $password = md5($this->app->get('flight.config')['app']['hash'] . '.' . $password);
         // $logdin = $this->app->model()->getAdapter()->checkLogin($username, $password); // using adapter
         
         $logdin = $this->app->model()->checkLogin($username, $password); // magic __call
-        $token = ($logdin != -1) ? JWTAuth::getToken(strval($logdin), $username, '7 days') : null;
+        $token = ($logdin != -1) ? $this->app->jwt()->getToken(strval($logdin), $username, '7 days') : null;
 
         $response = [
             'data' => [
@@ -134,10 +131,10 @@ class User extends BaseRouter
             return;
         }
 
-        $password = md5(R::get('app.config')['app']['hash'] . '.' . $password);
+        $password = md5($this->app->get('flight.config')['app']['hash'] . '.' . $password);
         $dob = $place . ', ' . $day . '-' . $month . '-' . $year;
         $lastInsertId = $this->app->model()->registerUser($username, $password, $name, $dob, $email, $gender, $address);
-        $token = ($lastInsertId != -1) ? JWTAuth::getToken(strval($lastInsertId), $username, '7 days') : null;
+        $token = ($lastInsertId != -1) ? $this->app->jwt()->getToken(strval($lastInsertId), $username, '7 days') : null;
 
         $response = [
             'data' => [

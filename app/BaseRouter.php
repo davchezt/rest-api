@@ -13,15 +13,15 @@ use flight\Engine;
 
 abstract class BaseRouter
 {
-    protected $app = null;
-    protected $id = 1;
+    protected $app;
+    protected $id;
 
     public function __construct(Engine $app, $userId)
     {
         $this->app = $app;
         $this->id = $userId;
 
-        $this->app->register('model', 'app\Model');
+        $this->app->register('model', 'app\Model', array($this->app));
     }
 
     abstract public function init();

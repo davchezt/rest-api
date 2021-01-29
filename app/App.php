@@ -11,11 +11,6 @@ defined("__DAVCHEZT") or die("{ \"response\" : \"error 403\"}");
 
 use flight\Engine;
 
-use app\Helper;
-use app\Logger;
-use app\Lib\R;
-use app\Lib\JWTAuth;
-
 class App
 {
     protected $app = null;
@@ -25,54 +20,63 @@ class App
     protected $startTime;
     protected $config = [];
 
-    public function __construct(Engine $app)
+    public function __construct(Engine $app, $config, $path)
     {
         $this->app = $app;
 
-        $this->app->register('request', 'app\Net\AppRequest');
+        $config['app']['path'] = $path;
+        $this->app->set('flight.config', $config);
+
+        $this->app->register('request', 'app\Net\AppRequest', array($path));
         $this->app->register('response', 'app\Net\AppResponse');
+        $this->app->register('helper', 'app\Helper');
+        $this->app->register('logger', 'app\Logger');
+        $this->app->register('mailer', 'app\Lib\Mailer');
+        $this->app->register('jwt', 'app\Lib\JWTAuth');
+        $this->app->register('db', 'app\Lib\Db');
 
-        $this->app->set('flight.views.path', R::get('app.path.views'));
+        $this->app->set('flight.views.path', $this->app->request()->path() . '/resources/views');
 
-        $this->token = $this->app->request()->getToken();
-        $header = JWTAuth::getHeader($this->token);
-        if (count($header) > 0) {
-            $this->id = $header['id'];
-        }
+        $this->app->logger()->configure($this->app);
+        $this->app->mailer()->configure($this->app);
+        $this->app->jwt()->configure($this->app);
 
-        $this->config = R::get('app.config');
-
-        Logger::configure(R::get('app.path.logs'));
         $this->configureDatabase();
         $this->initRouter();
 
         $this->startTime = microtime(true);
+        $this->token = $this->app->request()->getToken();
+        $header = $this->app->jwt()->getHeader($this->token);
+        if (count($header) > 0) {
+            $this->id = $header['id'];
+        }
 
-        // echo JWTAuth::getToken('1', 'davchezt', '7 days'); exit;
-        // echo JWTAuth::getToken('2', 'vchezt', '7 days'); exit;
+        // echo $this->app->jwt()getToken('1', 'davchezt', '7 days'); exit;
+        // echo $this->app->jwt()getToken('2', 'vchezt', '7 days'); exit;
     }
 
     public function configureDatabase()
     {
-        \ORM::configure($this->config['db']['dsn']);
-        \ORM::configure('username', $this->config['db']['dbu']);
-        \ORM::configure('password', $this->config['db']['dbp']);
-        \ORM::configure('error_mode', \PDO::ERRMODE_EXCEPTION);
-        \ORM::configure('driver_options', array(\PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES utf8mb4'));
+        $this->app->db()->configure($this->app->get('flight.config')['db']['dsn']);
+        $this->app->db()->configure('username', $this->app->get('flight.config')['db']['dbu']);
+        $this->app->db()->configure('password', $this->app->get('flight.config')['db']['dbp']);
+        $this->app->db()->configure('error_mode', \PDO::ERRMODE_EXCEPTION);
+        $this->app->db()->configure('driver_options', array(\PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES utf8mb4'));
 
-        \ORM::configure('return_result_sets', true);
-        \ORM::configure('logging', $this->config['app']['log']);
-        \ORM::configure('logger', function($log_string, $query_time) {
+        $this->app->db()->configure('return_result_sets', true);
+        $this->app->db()->configure('logging', $this->app->get('flight.config')['app']['log']);
+        $this->app->db()->configure('logger', function($log_string, $query_time) {
             $message = 'ORM ' . $log_string . ' in ' . $query_time;
-            Logger::write($message, 'orm');
+            $this->app->logger()->write($message, 'orm');
         });
-        \ORM::configure('caching', true);
-        \ORM::configure('caching_auto_clear', true);
+        $this->app->db()->configure('caching', true);
+        $this->app->db()->configure('caching_auto_clear', true);
     }
 
     public function initRouter()
     {
-        $exts = Helper::listingDir(R::get('app.path.routers'));
+        $dir = $this->app->request()->path() . '/App/Router';
+        $exts = $this->app->helper()->listingDir($dir);
         if (count($exts) != 0) {
             foreach ($exts['files'] as $ext) {
                 if (file_exists($ext['location'] . '/' . $ext['file'])) {
@@ -122,7 +126,7 @@ class App
     public function routeMap($pattern, $callback, $pass_route = false, $secure = false)
     {
         if ($secure) {
-            if (JWTAuth::verifyToken($this->token)) {
+            if ($this->app->jwt()->verifyToken($this->token)) {
                 $this->app->router()->map($pattern, $callback, $pass_route);
             } else {
                 $this->app->router()->map($pattern, function () {
@@ -141,9 +145,9 @@ class App
 
     public function afterNotFound()
     {
-        if ($this->config['app']['log']) {
-            $message = $this->app->request()->getMethod() . ': ' . $this->app->request()->url . ' -- ' . $this->app->response()->status() . ' [' . $this->app->request()->ip . ']';
-            Logger::write($message, 'notfound');
+        if ($this->app->get('flight.config')['app']['log']) {
+            $message = $this->app->request()->getMethod() . ': ' . $this->app->request()->url() . ' -- ' . $this->app->response()->status() . ' [' . $this->app->request()->ip() . ']';
+            $this->app->logger()->write($message, 'notfound');
         }
     }
 
@@ -153,13 +157,13 @@ class App
             'error' => array(
                 'code' => $ex->getCode(),
                 'messsage' => $ex->getMessage() . ' at ' . $ex->getFile() . ':' . $ex->getLine(),
-                'trace' => ($this->config['app']['debug']) ? $ex->getTrace() : 'disabled'
+                'trace' => ($this->app->get('flight.config')['app']['debug']) ? $ex->getTrace() : 'disabled'
             )
         );
 
-        if ($this->config['app']['log']) {
+        if ($this->app->get('flight.config')['app']['log']) {
             $message = 'ERROR ' . $ex->getCode() . ': ' . $ex->getMessage() . ' at ' . $ex->getFile() . ':' . $ex->getLine() . ' [' . $this->app->request()->ip . ']';
-            Logger::write($message, 'error');
+            $this->app->logger()->write($message, 'error');
         }
         $this->app->json(['response' => $err], 500);
     }
@@ -180,7 +184,7 @@ class App
         $data = array_merge([
             'status' => $status,
             'message' => $message,
-            'timestamp' => Helper::timeNow(),
+            'timestamp' => $this->app->helper()->timeNow(),
             'response_time' => $this->getResponseTime() . ' sec'
         ], $data);
 
@@ -206,7 +210,7 @@ class App
         $data = array_merge([
             'status' => $status,
             'message' => $message,
-            'timestamp' => Helper::timeNow(),
+            'timestamp' => $this->app->helper()->timeNow(),
             'response_time' => $this->getResponseTime() . ' sec'
         ], $data);
 
@@ -237,21 +241,23 @@ class App
         header_remove('Connection');
         // $this->app->response()->header('Connection', 'close');
 
-        $this->app->lastModified(Helper::timeNow(true, true));
+        $this->app->lastModified($this->app->helper()->timeNow(true, true));
+
+        // $this->app->set('flight.views.path', $this->app->request()->path() . '/resources/views');
         $this->loadRouters();
     }
 
     public function afetrStart()
     {
-        if ($this->config['app']['log'] && $this->app->response()->status() != 404) {
-            $message = $this->app->request()->getMethod() . ': ' . $this->app->request()->url . ' -- ' . $this->app->response()->status() . ' [' . $this->app->request()->ip . ']';
-            Logger::write($message, 'route');
+        if ($this->app->get('flight.config')['app']['log'] && $this->app->response()->status() != 404) {
+            $message = $this->app->request()->getMethod() . ': ' . $this->app->request()->url() . ' -- ' . $this->app->response()->status() . ' [' . $this->app->request()->ip() . ']';
+            $this->app->logger()->write($message, 'route');
         }
     }
 
     public function beforeJson()
     {
-        if ($this->config['app']['debug']) {
+        if ($this->app->get('flight.config')['app']['debug']) {
             $params[0] = [
                 'request' => [
                     'method' => $this->app->request()->getMethod(),
@@ -271,7 +277,7 @@ class App
     {
         $params[0] = ['message' => $params[0], 'detail' => 'Token is invalid or expired'];
 
-        if ($this->config['app']['debug']) {
+        if ($this->app->get('flight.config')['app']['debug']) {
             $params[0] = array_merge($params[0], array('token' => $this->token));
         }
     }
