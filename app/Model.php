@@ -59,24 +59,4 @@ class Model
     {
         return $this->adapter->getCount();
     }
-
-    public function addData($param = array())
-    {
-        return $this->adapter->addData($param = array());
-    }
-
-    public function updateData($param = array())
-    {
-        return $this->adapter->updateData($param = array());
-    }
-
-    public function deleteData($param = array())
-    {
-        return $this->adapter->deleteData($param = array());
-    }
-
-    public function clearData()
-    {
-        $this->adapter->clearData();
-    }
 }

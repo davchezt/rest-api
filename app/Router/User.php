@@ -26,17 +26,11 @@ class User extends BaseRouter
 
     public function init()
     {
-        // http://localhost/rest/flight/user/?jsonp=console.log
         $this->app->route('GET /v1/user', [$this, 'listUser'], false, true);
-        
         $this->app->route('GET /v1/user/me', [$this, 'userData'], false, true);
         $this->app->route('POST /v1/user/token', [$this, 'generateToken']);
         $this->app->route('POST /v1/user/register', [$this, 'registerUser']);
-
-        // http://localhost/rest/flight/user/1
         $this->app->route('GET /v1/user/@id:[0-9]{1,}', [$this, 'getUserById'], false, true);
-
-        // http://localhost/rest/flight/user/0/3
         $this->app->route('GET /v1/user/@offset:[0-9]{1,}/@limit:[0-9]{1,}', [$this, 'listUserLimit'], false, true);
     }
 
@@ -58,7 +52,7 @@ class User extends BaseRouter
         $users = $this->app->model()->getAll();
         $response = [
             'data' => $users,
-            'count' =>  $this->app->model()->getCount()// count($users)
+            'count' => count($users)
         ];
 
         $this->app->json(['response' => $response]);
