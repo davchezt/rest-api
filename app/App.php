@@ -26,6 +26,7 @@ class App
 
         $config['app']['path'] = $path;
         $this->app->set('flight.config', $config);
+        $this->config = $config;
 
         $this->app->register('request', 'app\Net\AppRequest', array($path));
         $this->app->register('response', 'app\Net\AppResponse');
@@ -46,31 +47,32 @@ class App
 
         $this->startTime = microtime(true);
         $this->token = $this->app->request()->getToken();
+
         $header = $this->app->jwt()->getHeader($this->token);
         if (count($header) > 0) {
             $this->id = $header['id'];
         }
-
-        // echo $this->app->jwt()getToken('1', 'davchezt', '7 days'); exit;
-        // echo $this->app->jwt()getToken('2', 'vchezt', '7 days'); exit;
     }
 
     public function configureDatabase()
     {
-        $this->app->db()->configure($this->app->get('flight.config')['db']['dsn']);
-        $this->app->db()->configure('username', $this->app->get('flight.config')['db']['dbu']);
-        $this->app->db()->configure('password', $this->app->get('flight.config')['db']['dbp']);
+        $this->app->db()->configure($this->config['db']['dsn']);
+        $this->app->db()->configure('username', $this->config['db']['dbu']);
+        $this->app->db()->configure('password', $this->config['db']['dbp']);
         $this->app->db()->configure('error_mode', \PDO::ERRMODE_EXCEPTION);
         $this->app->db()->configure('driver_options', array(\PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES utf8mb4'));
 
         $this->app->db()->configure('return_result_sets', true);
-        $this->app->db()->configure('logging', $this->app->get('flight.config')['app']['log']);
-        $this->app->db()->configure('logger', function($log_string, $query_time) {
-            $message = 'ORM ' . $log_string . ' in ' . $query_time;
-            $this->app->logger()->write($message, 'orm');
-        });
+        $this->app->db()->configure('logging', $this->config['app']['log']);
+        $this->app->db()->configure('logger', [$this, 'logQuery']);
         $this->app->db()->configure('caching', true);
         $this->app->db()->configure('caching_auto_clear', true);
+    }
+
+    public function logQuery($log_string, $query_time)
+    {
+        $message = 'ORM ' . $log_string . ' in ' . $query_time;
+        $this->app->logger()->write($message, 'orm');
     }
 
     public function initRouter()
@@ -145,7 +147,7 @@ class App
 
     public function afterNotFound()
     {
-        if ($this->app->get('flight.config')['app']['log']) {
+        if ($this->config['app']['log']) {
             $message = $this->app->request()->getMethod() . ': ' . $this->app->request()->url() . ' -- ' . $this->app->response()->status() . ' [' . $this->app->request()->ip() . ']';
             $this->app->logger()->write($message, 'notfound');
         }
@@ -157,11 +159,11 @@ class App
             'error' => array(
                 'code' => $ex->getCode(),
                 'messsage' => $ex->getMessage() . ' at ' . $ex->getFile() . ':' . $ex->getLine(),
-                'trace' => ($this->app->get('flight.config')['app']['debug']) ? $ex->getTrace() : 'disabled'
+                'trace' => ($this->config['app']['debug']) ? $ex->getTrace() : 'disabled'
             )
         );
 
-        if ($this->app->get('flight.config')['app']['log']) {
+        if ($this->config['app']['log']) {
             $message = 'ERROR ' . $ex->getCode() . ': ' . $ex->getMessage() . ' at ' . $ex->getFile() . ':' . $ex->getLine() . ' [' . $this->app->request()->ip . ']';
             $this->app->logger()->write($message, 'error');
         }
@@ -243,13 +245,12 @@ class App
 
         $this->app->lastModified($this->app->helper()->timeNow(true, true));
 
-        // $this->app->set('flight.views.path', $this->app->request()->path() . '/resources/views');
         $this->loadRouters();
     }
 
     public function afetrStart()
     {
-        if ($this->app->get('flight.config')['app']['log'] && $this->app->response()->status() != 404) {
+        if ($this->config['app']['log'] && $this->app->response()->status() != 404) {
             $message = $this->app->request()->getMethod() . ': ' . $this->app->request()->url() . ' -- ' . $this->app->response()->status() . ' [' . $this->app->request()->ip() . ']';
             $this->app->logger()->write($message, 'route');
         }
@@ -257,7 +258,7 @@ class App
 
     public function beforeJson()
     {
-        if ($this->app->get('flight.config')['app']['debug']) {
+        if ($this->config['app']['debug']) {
             $params[0] = [
                 'request' => [
                     'method' => $this->app->request()->getMethod(),
@@ -277,7 +278,7 @@ class App
     {
         $params[0] = ['message' => $params[0], 'detail' => 'Token is invalid or expired'];
 
-        if ($this->app->get('flight.config')['app']['debug']) {
+        if ($this->config['app']['debug']) {
             $params[0] = array_merge($params[0], array('token' => $this->token));
         }
     }
@@ -308,7 +309,6 @@ class App
         $this->app->after('notFound', [$this, 'afterNotFound']);
         $this->app->after('start', [$this, 'afetrStart']);
 
-        // $this->app->approuter()->init();
         $this->app->start();
     }
 }

@@ -5,15 +5,23 @@
  * @license		MIT public license
  */
 
+namespace app;
+
 defined("__DAVCHEZT") or die("{ \"response\" : \"error 403\"}");
 
-spl_autoload_register(function ($className) {
-    $className = str_replace('\\', DIRECTORY_SEPARATOR, $className);
-    $file = $className . '.php';
-
-    if (!file_exists($file)) {
-        return false;
+class AppLoader
+{
+    public static function load($className)
+    {
+        $className = str_replace('\\', DIRECTORY_SEPARATOR, $className);
+        $file = $className . '.php';
+    
+        if (!file_exists($file)) {
+            return false;
+        }
+    
+        require $file;
     }
+}
 
-    require $file;
-});
+spl_autoload_register(['app\AppLoader', 'load']);
