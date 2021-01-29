@@ -54,9 +54,4 @@ class Model
     {
         return $this->adapter->getList($start, $limit);
     }
-
-    public function getCount()
-    {
-        return $this->adapter->getCount();
-    }
 }
