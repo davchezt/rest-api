@@ -10,6 +10,7 @@ namespace app\Router;
 defined("__DAVCHEZT") or die("{ \"response\" : \"error 403\"}");
 
 use flight\Engine;
+use Form\Validator;
 
 use app\BaseRouter;
 use app\Adapter\UserAdapter;
@@ -71,23 +72,42 @@ class User extends BaseRouter
     public function generateToken()
     {
         $body = json_decode($this->app->request()->getBody(), true);
-        list($username, $password) = array_values($body);
+        $validator = new Validator([
+            'username' => ['required', 'trim', 'max_length' => 255],
+            'password' => ['required', 'trim', 'max_length' => 255]
+        ]);
 
-        $password = md5($this->app->get('flight.config')['app']['hash'] . '.' . $password);
-        // $logdin = $this->app->model()->getAdapter()->checkLogin($username, $password); // using adapter
+        if ($validator->validate($body)) {
+            $body = $validator->getValues(); // returns an array of sanitized values
+            
+            list($username, $password) = array_values($body);
+
+            $password = md5($this->app->get('flight.config')['app']['hash'] . '.' . $password);
+            // $logdin = $this->app->model()->getAdapter()->checkLogin($username, $password); // using adapter
         
-        $logdin = $this->app->model()->checkLogin($username, $password); // magic __call
-        $token = ($logdin != -1) ? $this->app->jwt()->getToken(strval($logdin), $username, '7 days') : null;
+            $logdin = $this->app->model()->checkLogin($username, $password); // magic __call
+            $token = ($logdin != -1) ? $this->app->jwt()->getToken(strval($logdin), $username, '7 days') : null;
 
-        $response = [
-            'data' => [
-                'id' => $logdin,
-                'username' => $username,
-                'token' => $token
-            ]
-        ];
+            $response = [
+                'data' => [
+                    'id' => $logdin,
+                    'username' => $username,
+                    'token' => $token
+                ]
+            ];
 
-        $this->app->json(['response' =>  $response]);
+            $this->app->json(['response' => $response]);
+        } else {
+            $validator->getErrors(); // contains the errors
+           $validator->getValues(); // can be used to repopulate the form
+
+           $response = [
+               'err' => $validator->getErrors(),
+               'val' => $validator->getValues()
+           ];
+
+            $this->app->json(['response' => $response]);
+        }
     }
 
     public function registerUser()
