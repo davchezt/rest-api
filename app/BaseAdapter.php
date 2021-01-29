@@ -9,28 +9,30 @@ namespace app;
 
 defined("__DAVCHEZT") or die("{ \"response\" : \"error 403\"}");
 
+use flight\Engine;
+
 class BaseAdapter
 {
+    protected $app;
     private $table;
 
-    public function __construct($tableName = '')
+    public function __construct($tableName)
     {
-        if ($tableName) {
-            $this->table = \ORM::for_table($tableName);
-        }
+        $this->table = $tableName;
+    }
+
+    public function setup(Engine $app)
+    {
+        $this->app = $app;
     }
 
     protected function orm($tableName = '')
     {
-        if ($tableName) {
-            return \ORM::for_table($tableName);
-        }
-
-        return $this->table;
+        return $this->app->db()->for_table($tableName ? $tableName : $this->table);
     }
 
     protected function raw($query)
     {
-        return \ORM::raw_execute($query);
+        return $this->app->db()->raw_execute($query);
     }
 }

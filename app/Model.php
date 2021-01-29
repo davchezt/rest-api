@@ -9,24 +9,30 @@ namespace app;
 
 defined("__DAVCHEZT") or die("{ \"response\" : \"error 403\"}");
 
+use flight\Engine;
 use app\ModelInterface;
 
 class Model
 {
+    protected $app;
     protected $adapter;
 
-    public function __construct() {}
-
-    public function __call($methodName, $args)
+    public function __construct(Engine $app)
     {
-        if (method_exists($this->adapter, $methodName)) {
-            return call_user_func_array(array($this->adapter, $methodName), $args);
+        $this->app = $app;
+    }
+
+    public function __call($method, $args)
+    {
+        if (method_exists($this->adapter, $method)) {
+            return call_user_func_array(array($this->adapter, $method), $args);
         }
     }
     
     public function setAdapter(ModelInterface $adapter)
     {
         $this->adapter = $adapter;
+        $this->adapter->setup($this->app);
     }
 
     public function getAdapter()

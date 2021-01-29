@@ -9,16 +9,21 @@ namespace app\Lib;
 
 defined("__DAVCHEZT") or die("{ \"response\" : \"error 403\"}");
 
+use flight\Engine;
 use \Firebase\JWT\JWT;
-
-use app\Helper;
-use app\Lib\R;
 
 /**
  * Class Jwt Authentication
  */
 class JWTAuth
 {
+    private static $app;
+
+    public static function configure(Engine $app)
+    {
+        self::$app = $app;
+    }
+
     /**
      * This method create a valid token.
      *
@@ -30,12 +35,12 @@ class JWTAuth
     public static function getToken($id, $user, $period = '12 hours')
     {
         // config secret
-        $secret = R::get('app.config')['app']['secret'];
+        $secret = self::$app->get('flight.config')['app']['secret'];
 
         // date now
-        $iat = Helper::timeNow(false, false, 'Y-m-d H:i:s');
+        $iat = self::$app->helper()->timeNow(false, false, 'Y-m-d H:i:s');
         // date now + period
-        $exp = Helper::dateFuture($period, 'Y-m-d H:i:s');
+        $exp = self::$app->helper()->dateFuture($period, 'Y-m-d H:i:s');
 
         $token = array(
             'header' => [ 			// store information
@@ -87,7 +92,7 @@ class JWTAuth
     {
         try {
             // config secret
-            $secret = R::get('app.config')['app']['secret'];
+            $secret = self::$app->get('flight.config')['app']['secret'];
 
             // decode token
             $obj = JWT::decode($token, $secret, array('HS256'));
@@ -95,7 +100,7 @@ class JWTAuth
             // check if payload is defined
             if (isset($obj->payload)) {
                 // actual date
-                $now = strtotime(Helper::timeNow(false, false, 'Y-m-d H:i:s'));
+                $now = strtotime(self::$app->helper()->timeNow(false, false, 'Y-m-d H:i:s'));
                 // expiration date
                 $exp = strtotime($obj->payload->exp);
                 

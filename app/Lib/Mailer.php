@@ -12,10 +12,16 @@ defined("__DAVCHEZT") or die("{ \"response\" : \"error 403\"}");
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
-use app\Lib\R;
+use flight\Engine;
 
 class Mailer
 {
+    private static $app;
+
+    public static function configure(Engine $app)
+    {
+        self::$app = $app;
+    }
 
 	/**
 	 * This method sends a email
@@ -32,7 +38,7 @@ class Mailer
 	public static function send($to, $name, $subject, $html, $text)
 	{
 		$mail = new PHPMailer(true);						// Passing `true` enables exceptions
-        $config = R::get('app.config')['mail'];
+        $config = self::$app->get('flight.config')['mail'];
 
 		//Server settings
 		$mail->SMTPDebug	=	0;							// Enable verbose debug output

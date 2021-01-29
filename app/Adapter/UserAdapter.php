@@ -11,8 +11,6 @@ defined("__DAVCHEZT") or die("{ \"response\" : \"error 403\"}");
 
 use app\BaseAdapter;
 use app\ModelInterface;
-use app\SQL;
-use ORM;
 
 class UserAdapter extends BaseAdapter implements ModelInterface
 {

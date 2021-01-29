@@ -9,24 +9,31 @@ namespace app;
 
 defined("__DAVCHEZT") or die("{ \"response\" : \"error 403\"}");
 
+use flight\Engine;
 use app\Helper;
 
 class Logger
 {
-    private static $dir;
+    private static $app;
+    private static $path;
 
-    public static function configure($dir)
+    public static function configure(Engine $app)
     {
-        self::$dir = $dir;
+        self::$app = $app;
+        self::$path = self::$app->request()->path()  . '/logs';
+    }
+
+    public static function path($path)
+    {
+        $this->path = $path;
     }
 
     public static function write($message, $file = 'log')
     {
-        $now = Helper::timeNow(true, true);
-        $file = rtrim(self::$dir) . DIRECTORY_SEPARATOR . $file . '_' . gmdate('Y_m_d', $now) . '.log';
+        $now = self::$app->helper()->timeNow(true, true);
+        $file = rtrim(self::$path) . DIRECTORY_SEPARATOR . $file . '_' . gmdate('Y_m_d', $now) . '.log';
         $contenet = '[' . gmdate('m/d/Y h:i:s A', $now) . '] ' . $message . PHP_EOL;
         
-        // echo $file;
         return (bool) file_put_contents($file, $contenet, FILE_APPEND);
     }
 }

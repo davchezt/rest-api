@@ -10,9 +10,52 @@ namespace app\Net;
 defined("__DAVCHEZT") or die("{ \"response\" : \"error 403\"}");
 
 use flight\net\Request;
+use flight\util\Collection;
 
 class AppRequest extends Request
 {
+    public $path;
+
+    public function __construct($path)
+    {
+        // $this->path = str_replace(array('\\',' '), array('/','%20'), __PATH);
+        $config = array(
+            'url' => str_replace('@', '%40', self::getVar('REQUEST_URI', '/')),
+            'base' => str_replace(array('\\',' '), array('/','%20'), dirname(self::getVar('SCRIPT_NAME'))),
+            'path' => str_replace(array('\\',' '), array('/','%20'), $path),
+            'method' => self::getMethod(),
+            'referrer' => self::getVar('HTTP_REFERER'),
+            'ip' => self::getVar('REMOTE_ADDR'),
+            'ajax' => self::getVar('HTTP_X_REQUESTED_WITH') == 'XMLHttpRequest',
+            'scheme' => self::getScheme(),
+            'user_agent' => self::getVar('HTTP_USER_AGENT'),
+            'type' => self::getVar('CONTENT_TYPE'),
+            'length' => self::getVar('CONTENT_LENGTH', 0),
+            'query' => new Collection($_GET),
+            'data' => new Collection($_POST),
+            'cookies' => new Collection($_COOKIE),
+            'files' => new Collection($_FILES),
+            'secure' => self::getScheme() == 'https',
+            'accept' => self::getVar('HTTP_ACCEPT'),
+            'proxy_ip' => self::getProxyIpAddress(),
+            'host' => self::getVar('HTTP_HOST'),
+        );
+
+        parent::__construct($config);
+    }
+
+    public function __call($method, $args = false)
+    {
+        $reflect = new \ReflectionClass($this);
+        $props   = $reflect->getProperties(\ReflectionProperty::IS_PUBLIC);
+
+        foreach ($props as $prop) {
+            if ($method == $prop->getName()) {
+                return $this->$method;
+            }
+        }
+    }
+
     /**
      * Initialize request properties.
      *
