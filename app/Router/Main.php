@@ -15,18 +15,27 @@ class Main extends BaseRouter
 {
     public function init()
     {
+        $this->app->plugin()->trigger('before', [$this]); // Router_Main_init_before
         $this->app->route('/', [$this, 'mainHTML']);
         $this->app->route('/v1', [$this, 'mainJSON']);
+        $this->app->plugin()->trigger('after', [$this]); // Router_Main_init_after
     }
 
     public function mainHTML()
     {
         $version = file_get_contents($this->app->request()->path() . '/vendor/mikecao/flight/VERSION');
-        $this->app->render('index', array('version' => 'Flight Framework (' . $version . ')'));
+        $content = ['version' => 'Flight Framework (' . $version . ')'];
+
+        $this->app->plugin()->trigger('init', [$this, &$content]); // Router_Main_mainHTML_init
+
+        $this->app->render('index', $content);
     }
 
     public function mainJSON()
     {
-        $this->app->json(['response' => ['data' => 'API version 1.0']]);
+        $response = ['data' => 'API version 1.0'];
+        $this->app->plugin()->trigger('init', [$this, &$response]); // Router_Main_mainJSON_init
+
+        $this->app->json(['response' => $response]);
     }
 }

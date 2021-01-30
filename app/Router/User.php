@@ -27,12 +27,14 @@ class User extends BaseRouter
 
     public function init()
     {
+        $this->app->plugin()->trigger('before', [$this]); // Router_User_init_before
         $this->app->route('GET /v1/user', [$this, 'listUser'], false, true);
         $this->app->route('GET /v1/user/me', [$this, 'userData'], false, true);
         $this->app->route('POST /v1/user/token', [$this, 'generateToken']);
         $this->app->route('POST /v1/user/register', [$this, 'registerUser']);
         $this->app->route('GET /v1/user/@id:[0-9]{1,}', [$this, 'getUserById'], false, true);
         $this->app->route('GET /v1/user/@offset:[0-9]{1,}/@limit:[0-9]{1,}', [$this, 'listUserLimit'], false, true);
+        $this->app->plugin()->trigger('after', [$this]); // Router_User_init_after
     }
 
     public function userData()
@@ -43,8 +45,10 @@ class User extends BaseRouter
     public function getUserById($id)
     {
         $userData = $this->app->model()->getById($id);
-
         $response = ['data' => $userData];
+
+        $this->app->plugin()->trigger('init', [$this, &$response]); // Router_User_getUserById_init
+
         $this->app->json(['response' => $response]);
     }
 
@@ -56,6 +60,8 @@ class User extends BaseRouter
             'count' => count($users)
         ];
 
+        $this->app->plugin()->trigger('init', [$this, &$response]); // Router_User_listUser_init
+
         $this->app->json(['response' => $response]);
     }
 
@@ -66,27 +72,38 @@ class User extends BaseRouter
             'data' => $users,
             'count' => count($users)
         ];
+
+        $this->app->plugin()->trigger('init', [$this, &$response]); // Router_User_listUserLimit_init
+
         $this->app->json(['response' => $response]);
     }
 
     public function generateToken()
     {
         $body = json_decode($this->app->request()->getBody(), true);
-        $validator = new Validator([
+
+        $vars = [
             'username' => ['required', 'trim', 'min_length' => 5, 'max_length' => 32],
             'password' => ['required', 'trim', 'min_length' => 5, 'max_length' => 32]
-        ]);
+        ];
+
+        $this->app->plugin()->trigger('before', [$this, &$vars]); // Router_User_generateToken_before
+
+        $validator = new Validator($vars);
 
         if ($validator->validate($body)) {
             $body = $validator->getValues(); // returns an array of sanitized values
             
             list($username, $password) = array_values($body);
 
-            $password = md5($this->app->get('flight.config')['app']['hash'] . '.' . $password);
-            // $logdin = $this->app->model()->getAdapter()->checkLogin($username, $password); // using adapter
+            $hashPassword = md5($this->app->get('flight.config')['app']['hash'] . '.' . $password);
+
+            $this->app->plugin()->trigger('password', [$this, &$body, &$hashPassword]); // Router_User_generateToken_password
         
-            $logdin = $this->app->model()->checkLogin($username, $password); // magic __call
+            $logdin = $this->app->model()->checkLogin($username, $hashPassword); // magic __call
             $token = ($logdin != -1) ? $this->app->jwt()->getToken(strval($logdin), $username, '7 days') : null;
+
+            $this->app->plugin()->trigger('init', [$this, &$logdin, &$token]); // Router_User_generateToken_init
 
             $response = [
                 'data' => [
@@ -95,6 +112,8 @@ class User extends BaseRouter
                     'token' => $token
                 ]
             ];
+
+            $this->app->plugin()->trigger('after', [$this, &$response]); // Router_User_generateToken_after
 
             $this->app->json(['response' => $response]);
         } else {
@@ -106,6 +125,8 @@ class User extends BaseRouter
                 'value' => $validator->getValues()
             ];
 
+            $this->app->plugin()->trigger('error', [$this, &$response, $validator]); // Router_User_generateToken_error
+
             $this->app->json(['response' => $response]);
         }
     }
@@ -113,7 +134,8 @@ class User extends BaseRouter
     public function registerUser()
     {
         $body = json_decode($this->app->request()->getBody(), true);
-        $validator = new Validator([
+
+        $vars = [
             'username' => ['required', 'trim', 'min_length' => 5, 'max_length' => 32],
             'password' => ['required', 'trim', 'min_length' => 5, 'max_length' => 32],
             'repassword' => ['required', 'trim', 'min_length' => 5, 'max_length' => 32],
@@ -125,7 +147,10 @@ class User extends BaseRouter
             'email' => ['required', 'email', 'min_length' => 5, 'max_length' => 32],
             'gender' => ['required', 'numeric', 'min_length' => 1, 'max_length' => 1],
             'address' => ['required', 'trim', 'min_length' => 10, 'max_length' => 500],
-        ]);
+        ];
+        $this->app->plugin()->trigger('before', [$this, &$vars]); // Router_User_registerUser_before
+
+        $validator = new Validator($vars);
 
         if ($validator->validate($body)) {
             $body = $validator->getValues(); // returns an array of sanitized values
@@ -143,6 +168,8 @@ class User extends BaseRouter
                 $error['email'] = ['exists' => true];
             }
 
+            $this->app->plugin()->trigger('validator', [$this, &$body, &$error]); // Router_User_registerUser_validator
+
             $response = [
                 'error' => $error,
                 'value' => $validator->getValues()
@@ -158,8 +185,11 @@ class User extends BaseRouter
             $address = strip_tags(html_entity_decode($address));
             $password = md5($this->app->get('flight.config')['app']['hash'] . '.' . $password);
             $dob = $place . ', ' . $day . '-' . $month . '-' . $year;
+            
             $lastInsertId = $this->app->model()->registerUser($username, $password, $name, $dob, $email, $gender, $address);
             $token = ($lastInsertId != -1) ? $this->app->jwt()->getToken(strval($lastInsertId), $username, '7 days') : null;
+
+            $this->app->plugin()->trigger('init', [$this, &$username, &$password, &$name, &$dob, &$email, &$gender, &$address, &$lastInsertId, &$token]); // Router_User_registerUser_init
 
             $response = [
                 'data' => [
@@ -168,6 +198,9 @@ class User extends BaseRouter
                     'token' => $token
                 ]
             ];
+
+            $this->app->plugin()->trigger('after', [$this, &$response]); // Router_User_registerUser_after
+
             $this->app->json(['response' => $response]);
         } else {
             $validator->getErrors(); // contains the errors
@@ -177,6 +210,7 @@ class User extends BaseRouter
                 'error' => $validator->getErrors(),
                 'value' => $validator->getValues()
             ];
+            $this->app->plugin()->trigger('error', [$this, &$response, $validator]); // Router_User_registerUser_error
 
             $this->app->json(['response' => $response]);
         }

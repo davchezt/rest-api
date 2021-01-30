@@ -5,6 +5,14 @@
  * @license		MIT public license
  */
 
+if (version_compare(phpversion(), '7.2.0', '<')) die('php >= 7.2.0 is required');
+
+if (!file_exists('vendor/autoload.php')) {
+    die('please run composer install first!');
+} elseif (!file_exists('config.php')) {
+    die('no config file found, please copy config.example.php to config.php');
+}
+
 use app\App;
 use flight\Engine;
 

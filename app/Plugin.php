@@ -47,13 +47,20 @@ class Plugin
         if (!isset($trace[1])) {
             return;
         }
+        
+        $class = new \ReflectionClass($trace[1]['class']);
+        // build event format "NamespaceName_class_method_event" e.g: App_beforeStart_before, Router_Main_init_before
+        if ($class->inNamespace()) {
+            $namespaceName = str_replace('app\\', '', $class->getName());
+            $namespaceName = str_replace('\\', '_', $namespaceName);
 
-        // build event format "Class_methos_event" e.g: App_beforeStart_before
-        $event = str_replace('app\\', '', $trace[1]['class']) . '_' . $trace[1]['function'] . '_' . $event;
+            $event = $namespaceName . '_' . $trace[1]['function'] . '_' . $event;
+        }
 
         $returns = array();
         foreach (self::$plugins as $plugin) {
-            if (method_exists($plugin, 'handler_' . $event)) { // serch for method (event format) e.g handler_App_beforeStart_before
+            // serch for method (event format) e.g handler_App_beforeStart_before, handler_Router_Main_init_before
+            if (method_exists($plugin, 'handler_' . $event)) {
                 $return = call_user_func_array(array($plugin, 'handler_' . $event), $parameters);
                 if ($return !== null) {
                     $returns[] = $return;
