@@ -11,7 +11,7 @@ defined("__DAVCHEZT") or die("{ \"response\" : \"error 403\"}");
 
 use app\BasePlugin;
 
-class Cors extends BasePlugin
+class Example extends BasePlugin
 {
     public function listen() {}
 
@@ -28,22 +28,26 @@ class Cors extends BasePlugin
 
     public function handler_App_beforeStart_after()
     {
-        $this->app->response()->removeHeader('Connection');
+        // remove comment to enable hook
+        /*$this->app->response()->removeHeader('Connection');*/
     }
 
     public function handler_App_jsonMap_before(&$data, &$code, &$encode, &$charset, &$option)
     {
-        $charset = 'utf-8';
+        // remove comment to enable hook
+        /*$charset = 'utf-8';*/
     }
 
     public function handler_App_jsonMap_init(&$data)
     {
-        unset($data['response_time']);
+        // remove comment to enable hook
+        /*unset($data['response_time']);*/
     }
 
     public function handler_App_jsonMap_after(&$json, &$data, &$code, &$encode, &$charset, &$option)
     {
-        unset($data['timestamp']);
-        $json = ($encode) ? json_encode($data, $option) : $data;
+        // remove comment to enable hook
+        /*unset($data['timestamp']);
+        $json = ($encode) ? json_encode($data, $option) : $data;*/
     }
 }

@@ -33,6 +33,8 @@ class UserAdapter extends BaseAdapter implements ModelInterface
             ->where_id_is($id)
             ->find_one();
 
+        $this->app->plugin()->trigger('init', [$this, &$id, &$result]); // Adapter_UserAdapter_getById_init
+
         return $result ? $result->as_array() : [];
     }
 
@@ -45,6 +47,8 @@ class UserAdapter extends BaseAdapter implements ModelInterface
             ->left_outer_join('profile', array('profile.id_user', '=', 'user.id'))
             ->where_not_equal('user.id', $id)
             ->find_array();
+
+        $this->app->plugin()->trigger('init', [$this, &$result]); // Adapter_UserAdapter_getAll_init
 
         return $result;
     }
@@ -61,14 +65,19 @@ class UserAdapter extends BaseAdapter implements ModelInterface
                 ->limit($limit)
                 ->find_array();
 
+        $this->app->plugin()->trigger('init', [$this, &$offset, &$limit, &$result]); // Adapter_UserAdapter_getList_init
+
         return $result;
     }
 
     public function getCount() : int
     {
         $id = intval($this->id);
+        $result = $this->orm()->where_not_equal('id', $id)->count();
 
-        return $this->orm()->where_not_equal('id', $id)->count();
+        $this->app->plugin()->trigger('init', [$this, &$result]); // Adapter_UserAdapter_getCount_init
+
+        return $result;
     }
 
     public function addData($param = array()) : int
@@ -97,6 +106,8 @@ class UserAdapter extends BaseAdapter implements ModelInterface
 
     public function checkLogin($username, $password)
     {
+        $this->app->plugin()->trigger('before', [$this, &$username, &$password]); // Adapter_UserAdapter_checkLogin_before
+
         $id = -1;
         if ($this->checkUsername($username) === false) {
             return $id;
@@ -114,6 +125,7 @@ class UserAdapter extends BaseAdapter implements ModelInterface
 
     public function checkUsername($username)
     {
+        $this->app->plugin()->trigger('before', [$this, &$username]); // Adapter_UserAdapter_checkUsername_before
         $id = intval($this->id);
 
         $count = $this->orm()->where('username', $username)->count();
@@ -127,6 +139,7 @@ class UserAdapter extends BaseAdapter implements ModelInterface
 
     public function checkEmail($email)
     {
+        $this->app->plugin()->trigger('before', [$this, &$email]); // Adapter_UserAdapter_checkEmail_before
         $id = intval($this->id);
 
         $count = $this->orm('profile')->where('email', $email)->count();
@@ -140,6 +153,7 @@ class UserAdapter extends BaseAdapter implements ModelInterface
 
     public function registerUser($username, $password, $name, $dob, $email, $gender, $address)
     {
+        $this->app->plugin()->trigger('before', [$this, &$username, &$password, &$name, &$dob, &$email, &$gender, &$address]); // Adapter_UserAdapter_registerUser_before
         try {
             $user = $this->orm()->create();
             $user->id = null;
@@ -161,6 +175,8 @@ class UserAdapter extends BaseAdapter implements ModelInterface
                 $profile->gender = $gender;
                 $profile->address = $address;
                 $profile->save();
+
+                $this->app->plugin()->trigger('after', [$this, $user, $profile]); // Adapter_UserAdapter_registerUser_before
 
                 if ($profile->id() || $profile->is_dirty('id')) { // is_dirty only for update
                     return $id;

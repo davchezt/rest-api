@@ -196,7 +196,7 @@ class App
             return $this->app->jsonp($data, 'jsonp', $code, $encode, $charset, $option);
         }
 
-        $this->app->plugin()->trigger('before', [&$data, &$code, &$encode, &$charset, &$option]);
+        $this->app->plugin()->trigger('before', [&$data, &$code, &$encode, &$charset, &$option]); // App_jsonMap_before
         
         $code = ($code) ? $code : $this->app->response()->status();
         $this->app->response()->status($code);
@@ -212,11 +212,11 @@ class App
             'response_time' => $this->getResponseTime() . ' sec'
         ], $data);
 
-        $this->app->plugin()->trigger('init', [&$data]);
+        $this->app->plugin()->trigger('init', [&$data]); // App_jsonMap_init
 
         $json = ($encode) ? json_encode($data, $option) : $data;
 
-        $this->app->plugin()->trigger('after', [&$json, &$data, &$code, &$encode, &$charset, &$option]);
+        $this->app->plugin()->trigger('after', [&$json, &$data, &$code, &$encode, &$charset, &$option]); // App_jsonMap_after
 
         $this->app->response()
             ->header('Content-Type', 'application/json; charset='.$charset)
@@ -226,6 +226,8 @@ class App
 
     public function jsonpMap($data, $param = 'jsonp', $code = null, $encode = true, $charset = 'utf-8', $option = JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT)
     {
+        $this->app->plugin()->trigger('before', [&$data, &$param, &$code, &$encode, &$charset, &$option]); // App_jsonpMap_before
+
         $code = ($code) ? $code : $this->app->response()->status();
         $this->app->response()->status($code);
         
@@ -243,7 +245,12 @@ class App
         ], $data);
 
         $callback = $this->app->request()->query[$param];
+
+        $this->app->plugin()->trigger('init', [&$data, &$callback]); // App_jsonpMap_init
+
         $json = ($encode) ? json_encode($data, $option) : $data;
+
+        $this->app->plugin()->trigger('after', [&$json, &$param, &$data, &$code, &$encode, &$charset, &$option]); // App_jsonpMap_after
 
         $this->app->response()
             ->header('Content-Type', 'application/json; charset='.$charset)
@@ -253,16 +260,14 @@ class App
 
     public function beforeStart()
     {
-        $this->app->plugin()->trigger('before');
-
+        $this->app->plugin()->trigger('before'); // App_beforeStart_before
         $this->app->response()->header('Cache-Control', 'no-store, no-cache, must-revalidate'); // HTTP 1.1
         $this->app->response()->header('Pragma', 'no-cache'); // HTTP 1.0
         $this->app->response()->header('Vary', 'Accept-Encoding, User-Agent');
         $this->app->response()->header('X-Powered-By', 'davchezt/rest-api');
         $this->app->response()->header('Connection', 'close');
         $this->app->lastModified($this->app->helper()->timeNow(true, true));
-        
-        $this->app->plugin()->trigger('after');
+        $this->app->plugin()->trigger('after'); // App_beforeStart_after
 
         $this->loadRouters();
     }
