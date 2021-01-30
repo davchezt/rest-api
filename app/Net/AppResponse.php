@@ -22,4 +22,12 @@ class AppResponse extends Response
 
         return $message;
     }
+
+    public function removeHeader($name)
+    {
+        if (array_key_exists($name, $this->headers))
+        {
+            unset($this->headers[$name]);
+        }
+    }
 }

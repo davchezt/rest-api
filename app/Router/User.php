@@ -73,8 +73,8 @@ class User extends BaseRouter
     {
         $body = json_decode($this->app->request()->getBody(), true);
         $validator = new Validator([
-            'username' => ['required', 'trim', 'max_length' => 255],
-            'password' => ['required', 'trim', 'max_length' => 255]
+            'username' => ['required', 'trim', 'min_length' => 5, 'max_length' => 32],
+            'password' => ['required', 'trim', 'min_length' => 5, 'max_length' => 32]
         ]);
 
         if ($validator->validate($body)) {
@@ -99,12 +99,12 @@ class User extends BaseRouter
             $this->app->json(['response' => $response]);
         } else {
             $validator->getErrors(); // contains the errors
-           $validator->getValues(); // can be used to repopulate the form
+            $validator->getValues(); // can be used to repopulate the form
 
-           $response = [
-               'err' => $validator->getErrors(),
-               'val' => $validator->getValues()
-           ];
+            $response = [
+                'error' => $validator->getErrors(),
+                'value' => $validator->getValues()
+            ];
 
             $this->app->json(['response' => $response]);
         }
@@ -113,50 +113,72 @@ class User extends BaseRouter
     public function registerUser()
     {
         $body = json_decode($this->app->request()->getBody(), true);
-        list($username, $password, $repassword, $name, $place, $day, $month, $year, $email, $gender, $address) = array_values($body);
+        $validator = new Validator([
+            'username' => ['required', 'trim', 'min_length' => 5, 'max_length' => 32],
+            'password' => ['required', 'trim', 'min_length' => 5, 'max_length' => 32],
+            'repassword' => ['required', 'trim', 'min_length' => 5, 'max_length' => 32],
+            'name' => ['required', 'trim', 'min_length' => 5, 'max_length' => 32],
+            'place' => ['required', 'trim', 'min_length' => 5, 'max_length' => 32],
+            'day' => ['required', 'numeric', 'min_length' => 1, 'max_length' => 2],
+            'month' => ['required', 'numeric', 'min_length' => 1, 'max_length' => 2],
+            'year' => ['required', 'numeric', 'min_length' => 4, 'max_length' => 4],
+            'email' => ['required', 'email', 'min_length' => 5, 'max_length' => 32],
+            'gender' => ['required', 'numeric', 'min_length' => 1, 'max_length' => 1],
+            'address' => ['required', 'trim', 'min_length' => 10, 'max_length' => 500],
+        ]);
 
-        $error = null;
-        $address = strip_tags(html_entity_decode($address));
-        $email = filter_var($email, FILTER_SANITIZE_EMAIL);
+        if ($validator->validate($body)) {
+            $body = $validator->getValues(); // returns an array of sanitized values
 
-        if (!preg_match('#^\w{5,}$#', $username)) {
-            $error = 'Invalid username, make sure it has alphanumeric & longer than or equals 5 chars';
-        } elseif ($password != $repassword) {
-            $error = 'Password not match';
-        } elseif (!preg_match('#^\d{1,2}+$#', intval($day))) {
-            $error = 'Invalid day for ' . $day;
-        } elseif (!preg_match('#^\d{1,2}+$#', intval($month))) {
-            $error = 'Invalid month for ' . $month;
-        } elseif (!preg_match('#^\d{4}+$#', intval($year))) {
-            $error = 'Invalid year for ' . $year;
-        } elseif (strlen($address) < 16) {
-            $error = 'Invalid address, make sure it has longer than or equals 16 chars';
-        } elseif (filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
-            $error = 'Invalid email format for ' . $email;
-        } elseif ($this->app->model()->checkUsername($username)) {
-            $error = 'Username "' . $username . '" already exists';
-        } elseif ($this->app->model()->checkEmail($email)) {
-            $error = 'Email "' . $email . '" is registered';
+            list($username, $password, $repassword, $name, $place, $day, $month, $year, $email, $gender, $address) = array_values($body);
+
+            $error = [];
+            if ($password != $repassword) {
+                $error['password'] = ['match' => false];
+            }
+            if ($this->app->model()->checkUsername($username)) {
+                $error['username'] = ['exists' => true];
+            }
+            if ($this->app->model()->checkEmail($email)) {
+                $error['email'] = ['exists' => true];
+            }
+
+            $response = [
+                'error' => $error,
+                'value' => $validator->getValues()
+            ];
+
+            if ($error) {
+                $this->app->json(['response' =>  ['data' => $response]]);
+    
+                return;
+            }
+
+            $email = filter_var($email, FILTER_SANITIZE_EMAIL);
+            $address = strip_tags(html_entity_decode($address));
+            $password = md5($this->app->get('flight.config')['app']['hash'] . '.' . $password);
+            $dob = $place . ', ' . $day . '-' . $month . '-' . $year;
+            $lastInsertId = $this->app->model()->registerUser($username, $password, $name, $dob, $email, $gender, $address);
+            $token = ($lastInsertId != -1) ? $this->app->jwt()->getToken(strval($lastInsertId), $username, '7 days') : null;
+
+            $response = [
+                'data' => [
+                    'id' => $lastInsertId,
+                    'username' => $username,
+                    'token' => $token
+                ]
+            ];
+            $this->app->json(['response' => $response]);
+        } else {
+            $validator->getErrors(); // contains the errors
+            $validator->getValues(); // can be used to repopulate the form
+
+            $response = [
+                'error' => $validator->getErrors(),
+                'value' => $validator->getValues()
+            ];
+
+            $this->app->json(['response' => $response]);
         }
-
-        if ($error) {
-            $this->app->json(['response' =>  ['data' => $error]]);
-
-            return;
-        }
-
-        $password = md5($this->app->get('flight.config')['app']['hash'] . '.' . $password);
-        $dob = $place . ', ' . $day . '-' . $month . '-' . $year;
-        $lastInsertId = $this->app->model()->registerUser($username, $password, $name, $dob, $email, $gender, $address);
-        $token = ($lastInsertId != -1) ? $this->app->jwt()->getToken(strval($lastInsertId), $username, '7 days') : null;
-
-        $response = [
-            'data' => [
-                'id' => $lastInsertId,
-                'username' => $username,
-                'token' => $token
-            ]
-        ];
-        $this->app->json(['response' => $response]);
     }
 }

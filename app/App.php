@@ -31,6 +31,7 @@ class App
         $this->app->register('request', 'app\Net\AppRequest', array($path));
         $this->app->register('response', 'app\Net\AppResponse');
         $this->app->register('helper', 'app\Helper');
+        $this->app->register('plugin', 'app\Plugin');
         $this->app->register('logger', 'app\Logger');
         $this->app->register('mailer', 'app\Lib\Mailer');
         $this->app->register('jwt', 'app\Lib\JWTAuth');
@@ -38,12 +39,14 @@ class App
 
         $this->app->set('flight.views.path', $this->app->request()->path() . '/resources/views');
 
+        $this->app->plugin()->configure($this->app);
         $this->app->logger()->configure($this->app);
         $this->app->mailer()->configure($this->app);
         $this->app->jwt()->configure($this->app);
 
         $this->configureDatabase();
         $this->initRouter();
+        $this->loadPlugins();
 
         $this->startTime = microtime(true);
         $this->token = $this->app->request()->getToken();
@@ -90,6 +93,23 @@ class App
                 }
             }
         }
+    }
+
+    public function loadPlugins()
+    {
+        $dir = $this->app->request()->path() . '/App/Plugin';
+        $exts = $this->app->helper()->listingDir($dir);
+        if (count($exts) != 0) {
+            foreach ($exts['files'] as $ext) {
+                if (file_exists($ext['location'] . '/' . $ext['file'])) {
+                    $name = pathinfo($ext['file'], PATHINFO_FILENAME);
+
+                    $this->app->plugin()->register(ucfirst($name));
+                }
+            }
+        }
+
+        $this->app->plugin()->loadPlugins();
     }
 
     public function addRouter($name, $class)
@@ -175,6 +195,8 @@ class App
         if ($this->app->request()->query['jsonp']) {
             return $this->app->jsonp($data, 'jsonp', $code, $encode, $charset, $option);
         }
+
+        $this->app->plugin()->trigger('before', [&$data, &$code, &$encode, &$charset, &$option]);
         
         $code = ($code) ? $code : $this->app->response()->status();
         $this->app->response()->status($code);
@@ -190,7 +212,11 @@ class App
             'response_time' => $this->getResponseTime() . ' sec'
         ], $data);
 
+        $this->app->plugin()->trigger('init', [&$data]);
+
         $json = ($encode) ? json_encode($data, $option) : $data;
+
+        $this->app->plugin()->trigger('after', [&$json, &$data, &$code, &$encode, &$charset, &$option]);
 
         $this->app->response()
             ->header('Content-Type', 'application/json; charset='.$charset)
@@ -227,23 +253,16 @@ class App
 
     public function beforeStart()
     {
-        $this->app->response()->header('Access-Control-Allow-Origin', '*');
-        $this->app->response()->header('Access-Control-Allow-Credentials', 'true');
-        $this->app->response()->header('Access-Control-Allow-Headers', 'Authorization, Origin, X-Requested-With, Content-Type, Accept');
-    
-        if ($this->app->request()->method === 'OPTIONS') {
-            $this->app->response()->header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE');
-        }
-    
+        $this->app->plugin()->trigger('before');
+
         $this->app->response()->header('Cache-Control', 'no-store, no-cache, must-revalidate'); // HTTP 1.1
         $this->app->response()->header('Pragma', 'no-cache'); // HTTP 1.0
         $this->app->response()->header('Vary', 'Accept-Encoding, User-Agent');
         $this->app->response()->header('X-Powered-By', 'davchezt/rest-api');
-
-        header_remove('Connection');
-        // $this->app->response()->header('Connection', 'close');
-
+        $this->app->response()->header('Connection', 'close');
         $this->app->lastModified($this->app->helper()->timeNow(true, true));
+        
+        $this->app->plugin()->trigger('after');
 
         $this->loadRouters();
     }
