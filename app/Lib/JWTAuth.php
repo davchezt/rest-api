@@ -32,7 +32,7 @@ class JWTAuth
      * @param string $period time period default 12 hours
      * @return string JWT Valid token.
      */
-    public static function getToken($id, $user, $period = '12 hours')
+    public static function getToken($id, $username, $period = '12 hours')
     {
         // config secret
         $secret = self::$app->get('flight.config')['app']['secret'];
@@ -42,16 +42,16 @@ class JWTAuth
         // date now + period
         $exp = self::$app->helper()->dateFuture($period, 'Y-m-d H:i:s');
 
-        $token = array(
-            'header' => [ 			// store information
-                'id' 	=> 	$id, 	// user id
-                'user' 	=> 	$user 	// username
+        $token = [
+            'header' => [ // store information
+                'id' => $id, // user id
+                'username' => $username // username
             ],
             'payload' => [
-                'iat'	=>	$iat, 	// start time
-                'exp'	=>	$exp	// ttoken expires
+                'iat' => $iat, // start time
+                'exp' => $exp // ttoken expires
             ]
-        );
+        ];
 
         $result = null;
         try {
@@ -72,7 +72,7 @@ class JWTAuth
      */
     public static function getHeader($token)
     {
-        $result = array();
+        $result = [];
         $obj = self::verifyToken($token);
 
         if ($obj && isset($obj->header)) {
@@ -95,7 +95,7 @@ class JWTAuth
             $secret = self::$app->get('flight.config')['app']['secret'];
 
             // decode token
-            $obj = JWT::decode($token, $secret, array('HS256'));
+            $obj = JWT::decode($token, $secret, ['HS256']);
 
             // check if payload is defined
             if (isset($obj->payload)) {

@@ -25,7 +25,7 @@ class Model
     public function __call($method, $args)
     {
         if (method_exists($this->adapter, $method)) {
-            return call_user_func_array(array($this->adapter, $method), $args);
+            return call_user_func_array([$this->adapter, $method], $args);
         }
     }
     

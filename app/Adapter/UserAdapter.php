@@ -29,7 +29,7 @@ class UserAdapter extends BaseAdapter implements ModelInterface
         $result = $this->orm()
             ->select_many('user.id', 'user.username', 'user.type', 'user.join_date')
             ->select_many('profile.name', 'profile.dob', 'profile.email', 'profile.gender', 'profile.address')
-            ->left_outer_join('profile', array('profile.id_user', '=', 'user.id'))
+            ->left_outer_join('profile', ['profile.id_user', '=', 'user.id'])
             ->where_id_is($id)
             ->find_one();
 
@@ -44,7 +44,7 @@ class UserAdapter extends BaseAdapter implements ModelInterface
         $result = $this->orm()
             ->select_many('user.id', 'user.username', 'user.type', 'user.join_date')
             ->select_many('profile.name', 'profile.dob', 'profile.email', 'profile.gender', 'profile.address')
-            ->left_outer_join('profile', array('profile.id_user', '=', 'user.id'))
+            ->left_outer_join('profile', ['profile.id_user', '=', 'user.id'])
             ->where_not_equal('user.id', $id)
             ->find_array();
 
@@ -59,7 +59,7 @@ class UserAdapter extends BaseAdapter implements ModelInterface
         $result = $this->orm()
                 ->select_many('user.id', 'user.username', 'user.type', 'user.join_date')
                 ->select_many('profile.name', 'profile.dob', 'profile.email', 'profile.gender', 'profile.address')
-                ->left_outer_join('profile', array('profile.id_user', '=', 'user.id'))
+                ->left_outer_join('profile', ['profile.id_user', '=', 'user.id'])
                 ->where_not_equal('user.id', $id)
                 ->where_gt('user.id', $offset)
                 ->limit($limit)
@@ -98,8 +98,9 @@ class UserAdapter extends BaseAdapter implements ModelInterface
     public function clearData() : void
     {
         // WARNING
-        $query = "TRUNCATE `user`";
-        if ($this->raw($query)) {
+        $queryu = "TRUNCATE `user`";
+        $queryp = "TRUNCATE `profile`";
+        if ($this->raw($queryu) && $this->raw($queryp)) {
             // OK
         }
     }
@@ -114,9 +115,9 @@ class UserAdapter extends BaseAdapter implements ModelInterface
         }
 
         $user = $this->orm()->where('username', $username)->find_one();
-        $pass = $user ? $user->get('password') : null;
+        $hash = $user ? $user->get('password') : null;
 
-        if ($password == $pass) {
+        if ($this->app->helper()->validatePass($password, $hash)) {
             $id = (int)$user->get('id');
         }
 
@@ -126,8 +127,6 @@ class UserAdapter extends BaseAdapter implements ModelInterface
     public function checkUsername($username)
     {
         $this->app->plugin()->trigger('before', [$this, &$username]); // Adapter_UserAdapter_checkUsername_before
-        $id = intval($this->id);
-
         $count = $this->orm()->where('username', $username)->count();
 
         if ($count != 0) {
@@ -140,8 +139,6 @@ class UserAdapter extends BaseAdapter implements ModelInterface
     public function checkEmail($email)
     {
         $this->app->plugin()->trigger('before', [$this, &$email]); // Adapter_UserAdapter_checkEmail_before
-        $id = intval($this->id);
-
         $count = $this->orm('profile')->where('email', $email)->count();
 
         if ($count != 0) {

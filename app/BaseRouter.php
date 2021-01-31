@@ -21,7 +21,7 @@ abstract class BaseRouter
         $this->app = $app;
         $this->id = $userId;
 
-        $this->app->register('model', 'app\Model', array($this->app));
+        $this->app->register('model', 'app\Model', [$this->app]);
     }
 
     abstract public function init();

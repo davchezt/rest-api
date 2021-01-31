@@ -49,7 +49,11 @@ class User extends BaseRouter
 
         $this->app->plugin()->trigger('init', [$this, &$response]); // Router_User_getUserById_init
 
-        $this->app->json(['response' => $response]);
+        if (is_array($response['data']) && count($response['data']) != 0) {
+            $this->app->json(['response' => $response]);
+        } else {
+            $this->app->notFound();
+        }
     }
 
     public function listUser()
@@ -96,11 +100,10 @@ class User extends BaseRouter
             
             list($username, $password) = array_values($body);
 
-            $hashPassword = md5($this->app->get('flight.config')['app']['hash'] . '.' . $password);
-
-            $this->app->plugin()->trigger('password', [$this, &$body, &$hashPassword]); // Router_User_generateToken_password
+            $password = md5($this->app->get('flight.config')['app']['hash'] . '.' . $password);
+            $this->app->plugin()->trigger('password', [$this, &$body]); // Router_User_generateToken_password
         
-            $logdin = $this->app->model()->checkLogin($username, $hashPassword); // magic __call
+            $logdin = $this->app->model()->checkLogin($username, $password); // magic __call
             $token = ($logdin != -1) ? $this->app->jwt()->getToken(strval($logdin), $username, '7 days') : null;
 
             $this->app->plugin()->trigger('init', [$this, &$logdin, &$token]); // Router_User_generateToken_init
@@ -184,6 +187,7 @@ class User extends BaseRouter
             $email = filter_var($email, FILTER_SANITIZE_EMAIL);
             $address = strip_tags(html_entity_decode($address));
             $password = md5($this->app->get('flight.config')['app']['hash'] . '.' . $password);
+            $password = $this->app->helper()->generatePass($password);
             $dob = $place . ', ' . $day . '-' . $month . '-' . $year;
             
             $lastInsertId = $this->app->model()->registerUser($username, $password, $name, $dob, $email, $gender, $address);

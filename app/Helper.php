@@ -55,8 +55,8 @@ class Helper
             $path = ".";
         }
     
-        $fileList = $directoryList = array();
-        $ignoreList = array(".", "..", ".htaccess");
+        $fileList = $directoryList = [];
+        $ignoreList = [".", "..", ".htaccess"];
         if (is_dir($path)) {
             $directoryHandle  = opendir($path);
             while (false !== ($file = readdir($directoryHandle))) {
@@ -64,17 +64,17 @@ class Helper
                     continue;
                 }
                 if (is_dir($path . "/" . $file)) {
-                    $directoryList["dirs"][] = array(
+                    $directoryList["dirs"][] = [
                         "file" => $file,
                         "location" => $path,
                         "type" => "dir"
-                    );
+                    ];
                 } else {
-                    $fileList["files"][] = array(
+                    $fileList["files"][] = [
                         "file" => $file,
                         "location" => $path,
                         "type" => "file"
-                    );
+                    ];
                 }
             }
             closedir($directoryHandle);
@@ -84,5 +84,35 @@ class Helper
         $finalList = array_merge($directoryList, $fileList);
     
         return $finalList;
+    }
+
+    public static function generateRandomString($length = 10, $uppercase = false)
+    {
+        $characters = ['0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ', '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'];
+        $index = $uppercase ? 0 : 1;
+        $charactersLength = strlen($characters[$index]);
+        
+        $randomString = '';
+        for ($i = 0; $i < $length; $i++) {
+            $randomString .= $characters[$index][rand(0, $charactersLength - 1)];
+        }
+
+        return $randomString;
+    }
+
+    public static function generatePass($password)
+    {
+        $hash = password_hash($password, PASSWORD_DEFAULT, ['cost' => 12]);
+
+        return $hash;
+    }
+
+    public static function validatePass($password, $hash)
+    {
+        if (password_verify($password, $hash)) {
+            return true;
+        }
+
+        return false;
     }
 }
