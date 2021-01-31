@@ -11,7 +11,7 @@ defined("__DAVCHEZT") or die("{ \"response\" : \"error 403\"}");
 
 class Image
 {
-    protected $config = array();
+    protected $config = [];
     const DS = DIRECTORY_SEPARATOR;
 
     public function __construct($config = array())
@@ -184,7 +184,7 @@ class Image
         $image = $this->createImageFrom($source);
         list($sourceWidth, $sourceHeight, $type) = $this->getImageInfo($source);
         $outputType = pathinfo($destination, PATHINFO_EXTENSION);
-        $types = array(1 => "gif", 2 => "jpg", 3 => "png");
+        $types = [1 => "gif", 2 => "jpg", 3 => "png"];
 
         if (!$outputType or !in_array($outputType, $types)) {
             $outputType = $types[$type];

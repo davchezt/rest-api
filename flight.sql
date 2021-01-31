@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost
--- Generation Time: Jan 27, 2021 at 08:21 PM
+-- Generation Time: Jan 31, 2021 at 05:12 AM
 -- Server version: 5.7.11
 -- PHP Version: 7.2.7
 
@@ -58,9 +58,7 @@ CREATE TABLE `profile` (
 --
 
 INSERT INTO `profile` (`id`, `id_user`, `name`, `dob`, `email`, `gender`, `address`) VALUES
-(1, 1, 'Admin', 'Bogor, 20-05-1986', 'davchezt@outlook.com', 1, 'Vila Regensi II Blok AD-12 No 05 Pasar Kemis, Tangerang'),
-(2, 2, 'Raiza Rhamdan', 'Bogor, 20-05-1986', 'davchezt@gmail.com', 1, 'Vila Regensi II Blok AD-12 No 05 Pasar Kemis, Tangerang'),
-(3, 3, 'Raiza Rhamdan', 'Bogor, 20-05-1986', 'chezt.v@live.com', 1, 'Vila Regensi II Blok AD-12 No 05 Pasar Kemis, Tangerang');
+(1, 1, 'Raiza Rhamdan', 'Bogor, 20-05-1986', 'davchezt@gmail.com', 1, 'Vila Regensi II Blok AD-12 No 05 Pasar Kemis, Tangerang');
 
 -- --------------------------------------------------------
 
@@ -81,9 +79,7 @@ CREATE TABLE `user` (
 --
 
 INSERT INTO `user` (`id`, `username`, `password`, `type`, `join_date`) VALUES
-(1, 'admin', 'f0654c956a3667e9ea6238d6a972ec22', 1, '2021-01-28'),
-(2, 'davchezt', '98e8bde99accfee39b5646aba6b80605', 1, '2021-01-28'),
-(3, 'vchezt', '98e8bde99accfee39b5646aba6b80605', 0, '2021-01-28');
+(1, 'davchezt', '$2y$12$HkIwNCVm20Rd0WZSC0EkQedDwwzUPbdX1al9wGoTmHzW09ApvgB1m', 1, '2021-01-31');
 
 -- --------------------------------------------------------
 
@@ -148,13 +144,13 @@ ALTER TABLE `logging`
 -- AUTO_INCREMENT for table `profile`
 --
 ALTER TABLE `profile`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `user`
 --
 ALTER TABLE `user`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `visitor`

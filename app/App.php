@@ -14,7 +14,7 @@ use flight\Engine;
 class App
 {
     protected $app = null;
-    protected $id = 1;
+    protected $id = 0;
     protected $token = null;
     protected $routers = [];
     protected $startTime;
@@ -24,11 +24,12 @@ class App
     {
         $this->app = $app;
 
-        $config['app']['path'] = $path;
-        $this->app->set('flight.config', $config);
+        // $config['app']['path'] = $path;
         $this->config = $config;
 
-        $this->app->register('request', 'app\Net\AppRequest', array($path));
+        $this->app->set('flight.config', $config);
+
+        $this->app->register('request', 'app\Net\AppRequest', [$path]);
         $this->app->register('response', 'app\Net\AppResponse');
         $this->app->register('helper', 'app\Helper');
         $this->app->register('plugin', 'app\Plugin');
@@ -44,41 +45,74 @@ class App
         $this->app->mailer()->configure($this->app);
         $this->app->jwt()->configure($this->app);
 
-        $this->configureDatabase();
         $this->initRouter();
         $this->loadPlugins();
 
-        $this->startTime = microtime(true);
-        $this->token = $this->app->request()->getToken();
+        $this->configureDatabase();
+        $this->ckeckToken();
 
-        $header = $this->app->jwt()->getHeader($this->token);
-        if (count($header) > 0) {
-            $this->id = $header['id'];
-        }
+        $this->startTime = microtime(true);
     }
 
-    public function configureDatabase()
+    private function configureDatabase()
     {
         $this->app->db()->configure($this->config['db']['dsn']);
         $this->app->db()->configure('username', $this->config['db']['dbu']);
         $this->app->db()->configure('password', $this->config['db']['dbp']);
         $this->app->db()->configure('error_mode', \PDO::ERRMODE_EXCEPTION);
-        $this->app->db()->configure('driver_options', array(\PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES utf8mb4'));
+        $this->app->db()->configure('driver_options', [\PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES utf8mb4']);
 
         $this->app->db()->configure('return_result_sets', true);
         $this->app->db()->configure('logging', $this->config['app']['log']);
         $this->app->db()->configure('logger', [$this, 'logQuery']);
         $this->app->db()->configure('caching', true);
         $this->app->db()->configure('caching_auto_clear', true);
+
+        $this->app->plugin()->trigger('init'); // App_configureDatabase_init
     }
 
-    public function logQuery($log_string, $query_time)
+    private function ckeckToken()
+    {
+        $token = $this->app->request()->getToken();
+        $header = $this->app->jwt()->getHeader($token);
+
+        $this->app->plugin()->trigger('before', [$this, &$token, &$header]); // App_ckeckToken_before
+        if (is_array($header) && count($header) > 0) {
+            list($id, $username) = array_values($header);
+            $id = intval($id);
+
+            $count = $this->app->db()
+                ->for_table('user')
+                ->where('username', $username)
+                ->where('id', $id)
+                ->count();
+
+            if ($count != 0) {
+                $this->updateToken($id, $token);
+            }
+        }
+
+        $this->app->plugin()->trigger('after', [$this, &$token, &$header]); // App_ckeckToken_after
+    }
+
+    public function updateToken($id, $token)
+    {
+        if (!empty($token) && is_int($id) && $id > 0)
+        {
+            $this->id = $id;
+            $this->token = $token;
+        }
+    }
+
+    private function logQuery($log_string, $query_time)
     {
         $message = 'ORM ' . $log_string . ' in ' . $query_time;
+        $this->app->plugin()->trigger('log', [$this, &$message, $log_string, $query_time]); // App_logQuery_log
+
         $this->app->logger()->write($message, 'orm');
     }
 
-    public function initRouter()
+    private function initRouter()
     {
         $dir = $this->app->request()->path() . '/App/Router';
         $exts = $this->app->helper()->listingDir($dir);
@@ -95,7 +129,7 @@ class App
         }
     }
 
-    public function loadPlugins()
+    private function loadPlugins()
     {
         $dir = $this->app->request()->path() . '/App/Plugin';
         $exts = $this->app->helper()->listingDir($dir);
@@ -114,10 +148,10 @@ class App
 
     public function addRouter($name, $class)
     {
-        $this->routers[$name] = array($class, array($this->app, $this->id));
+        $this->routers[$name] = [$class, [$this->app, $this->id]];
     }
 
-    public function registerRouter($name)
+    private function registerRouter($name)
     {
         if (isset($this->routers[$name])) {
             list($class, $params) = $this->routers[$name];
@@ -129,7 +163,7 @@ class App
         return false;
     }
 
-    public function loadRouters()
+    private function loadRouters()
     {
         foreach ($this->routers as $key => $val) {
             if ($this->registerRouter($key)) {
@@ -147,6 +181,7 @@ class App
 
     public function routeMap($pattern, $callback, $pass_route = false, $secure = false)
     {
+        $this->app->plugin()->trigger('before', [$this, $pattern, $callback, $pass_route, $secure]); // App_routeMap_before
         if ($secure) {
             if ($this->app->jwt()->verifyToken($this->token)) {
                 $this->app->router()->map($pattern, $callback, $pass_route);
@@ -158,35 +193,47 @@ class App
         } else {
             $this->app->router()->map($pattern, $callback, $pass_route);
         }
+        $this->app->plugin()->trigger('after', [$this, $pattern, $callback, $pass_route, $secure]); // App_routeMap_after
     }
 
     public function notFoundMap()
     {
-        $this->app->json(['response' => 'Error 404'], 404);
+        $response = ['data' => 'Error 404'];
+        $this->app->plugin()->trigger('init', [$this, &$response]); // App_notFoundMap_init
+
+        $this->app->json(['response' => $response], 404);
     }
 
     public function afterNotFound()
     {
         if ($this->config['app']['log']) {
             $message = $this->app->request()->getMethod() . ': ' . $this->app->request()->url() . ' -- ' . $this->app->response()->status() . ' [' . $this->app->request()->ip() . ']';
+            $this->app->plugin()->trigger('log', [$this, &$message]); // App_afterNotFound_log
+
             $this->app->logger()->write($message, 'notfound');
         }
     }
 
     public function errorMap(/*\Exception */$ex)
     {
-        $err = array(
-            'error' => array(
+        $this->app->plugin()->trigger('before', [$this, $ex]); // App_errorMap_before
+        $err = [
+            'error' => [
                 'code' => $ex->getCode(),
                 'messsage' => $ex->getMessage() . ' at ' . $ex->getFile() . ':' . $ex->getLine(),
                 'trace' => ($this->config['app']['debug']) ? $ex->getTrace() : 'disabled'
-            )
-        );
+            ]
+        ];
+
+        $this->app->plugin()->trigger('init', [$this, &$err]); // App_errorMap_init
 
         if ($this->config['app']['log']) {
             $message = 'ERROR ' . $ex->getCode() . ': ' . $ex->getMessage() . ' at ' . $ex->getFile() . ':' . $ex->getLine() . ' [' . $this->app->request()->ip . ']';
+            $this->app->plugin()->trigger('log', [$this, &$message]); // App_errorMap_log
+
             $this->app->logger()->write($message, 'error');
         }
+
         $this->app->json(['response' => $err], 500);
     }
 
@@ -276,11 +323,13 @@ class App
     {
         if ($this->config['app']['log'] && $this->app->response()->status() != 404) {
             $message = $this->app->request()->getMethod() . ': ' . $this->app->request()->url() . ' -- ' . $this->app->response()->status() . ' [' . $this->app->request()->ip() . ']';
+            $this->app->plugin()->trigger('log', [$this, &$message]); // App_afetrStart_log
+            
             $this->app->logger()->write($message, 'route');
         }
     }
 
-    public function beforeJson()
+    public function beforeJson(&$params, &$output)
     {
         if ($this->config['app']['debug']) {
             $params[0] = [
@@ -290,11 +339,15 @@ class App
                 ],
                 'response' => $params[0]['response']
             ];
+
+            $this->app->plugin()->trigger('init', [$this, &$params, &$output]); // App_beforeJson_init
         }
     }
 
     public function notAuthorizedMap($message)
     {
+        $this->app->plugin()->trigger('init', [$this, &$message]); // App_notAuthorizedMap_init
+
         return $message;
     }
 
@@ -303,17 +356,22 @@ class App
         $params[0] = ['message' => $params[0], 'detail' => 'Token is invalid or expired'];
 
         if ($this->config['app']['debug']) {
-            $params[0] = array_merge($params[0], array('token' => $this->token));
+            $params[0] = array_merge($params[0], ['token' => $this->token]);
         }
+
+        $this->app->plugin()->trigger('init', [$this, &$params, &$output]); // App_beforeNotAuthorized_init
     }
 
     public function afterNotAuthorized(&$params, &$output)
     {
+        $this->app->plugin()->trigger('init', [$this, &$params, &$output]); // App_afterNotAuthorized_init
         $this->app->json(['response' => $params[0]], 401);
     }
 
     public function start()
     {
+        $this->app->plugin()->trigger('before', [$this]); // App_start_before
+
         // MAP HOOK
         $this->app->map('route', [$this, 'routeMap']);
         $this->app->map('notFound', [$this, 'notFoundMap']);
@@ -332,6 +390,8 @@ class App
         $this->app->after('notAuthorized', [$this, 'afterNotAuthorized']);
         $this->app->after('notFound', [$this, 'afterNotFound']);
         $this->app->after('start', [$this, 'afetrStart']);
+
+        $this->app->plugin()->trigger('after', [$this]); // App_start_after
 
         $this->app->start();
     }

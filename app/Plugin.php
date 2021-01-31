@@ -57,11 +57,11 @@ class Plugin
             $event = $namespaceName . '_' . $trace[1]['function'] . '_' . $event;
         }
 
-        $returns = array();
+        $returns = [];
         foreach (self::$plugins as $plugin) {
             // serch for method (event format) e.g handler_App_beforeStart_before, handler_Router_Main_init_before
             if (method_exists($plugin, 'handler_' . $event)) {
-                $return = call_user_func_array(array($plugin, 'handler_' . $event), $parameters);
+                $return = call_user_func_array([$plugin, 'handler_' . $event], $parameters);
                 if ($return !== null) {
                     $returns[] = $return;
                 }
@@ -75,7 +75,7 @@ class Plugin
     {
         foreach (self::$plugins as $plugin) {
             if (method_exists($plugin, 'handler_' . $event)) {
-                $return = call_user_func_array(array($plugin, 'handler_' . $event), $parameters);
+                $return = call_user_func_array([$plugin, 'handler_' . $event], $parameters);
                 if ($return !== null) {
                     return $return;
                 }
