@@ -9,15 +9,12 @@ namespace app;
 
 defined("__DAVCHEZT") or die("{ \"response\" : \"error 403\"}");
 
-use flight\Engine;
-use app\Helper;
-
 class Logger
 {
     private static $app;
     private static $path;
 
-    public static function configure(Engine $app)
+    public static function configure(AppEngine $app)
     {
         self::$app = $app;
         self::$path = self::$app->request()->path()  . '/logs';
@@ -25,7 +22,7 @@ class Logger
 
     public static function path($path)
     {
-        $this->path = $path;
+        self::$path = $path;
     }
 
     public static function write($message, $file = 'log')

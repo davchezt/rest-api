@@ -9,15 +9,13 @@ namespace app;
 
 defined("__DAVCHEZT") or die("{ \"response\" : \"error 403\"}");
 
-use flight\Engine;
-
 class Plugin
 {
     protected static $app;
     protected static $pluginList = [];
     protected static $plugins = [];
     
-    public static function configure(Engine $app)
+    public static function configure(AppEngine $app)
     {
         self::$app = $app;
     }

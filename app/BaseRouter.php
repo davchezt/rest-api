@@ -9,14 +9,12 @@ namespace app;
 
 defined("__DAVCHEZT") or die("{ \"response\" : \"error 403\"}");
 
-use flight\Engine;
-
 abstract class BaseRouter
 {
     protected $app;
     protected $id;
 
-    public function __construct(Engine $app, $userId)
+    public function __construct(AppEngine $app, $userId)
     {
         $this->app = $app;
         $this->id = $userId;

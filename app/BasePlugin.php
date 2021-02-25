@@ -9,13 +9,11 @@ namespace app;
 
 defined("__DAVCHEZT") or die("{ \"response\" : \"error 403\"}");
 
-use flight\Engine;
-
 abstract class BasePlugin
 {
     protected $app;
 
-    public function __construct(Engine $app)
+    public function __construct(AppEngine $app)
     {
         $this->app = $app;
     }

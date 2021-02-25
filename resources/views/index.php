@@ -12,6 +12,7 @@
     <link href="https://fonts.googleapis.com/css?family=Raleway:100,600" rel="stylesheet" type="text/css">
     <link href="https://fonts.googleapis.com/css2?family=Mr+Dafoe&amp;family=Inter:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
     <!-- Styles -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-fork-ribbon-css/0.2.3/gh-fork-ribbon.min.css" />
     <style>
         html,
         body {
@@ -95,6 +96,7 @@
             </div>
         </div>
     </div>
+    <a class="github-fork-ribbon" target="_blank" href="https://github.com/davchezt/rest-api" data-ribbon="Fork me on GitHub" title="Fork me on GitHub">Fork me on GitHub</a>
 </body>
 
 </html>

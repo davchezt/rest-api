@@ -10,9 +10,8 @@ namespace app\Adapter;
 defined("__DAVCHEZT") or die("{ \"response\" : \"error 403\"}");
 
 use app\BaseAdapter;
-use app\ModelInterface;
 
-class UserAdapter extends BaseAdapter implements ModelInterface
+class UserAdapter extends BaseAdapter
 {
     private $id = 0;
 

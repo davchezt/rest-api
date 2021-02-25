@@ -9,15 +9,12 @@ namespace app;
 
 defined("__DAVCHEZT") or die("{ \"response\" : \"error 403\"}");
 
-use flight\Engine;
-use app\ModelInterface;
-
 class Model
 {
     protected $app;
     protected $adapter;
 
-    public function __construct(Engine $app)
+    public function __construct(AppEngine $app)
     {
         $this->app = $app;
     }
@@ -29,7 +26,7 @@ class Model
         }
     }
     
-    public function setAdapter(ModelInterface $adapter)
+    public function setAdapter(BaseAdapter $adapter)
     {
         $this->adapter = $adapter;
         $this->adapter->setup($this->app);
@@ -38,20 +35,5 @@ class Model
     public function getAdapter()
     {
         return $this->adapter;
-    }
-
-    public function getById($id = 0)
-    {
-        return $this->adapter->getById($id);
-    }
-
-    public function getAll()
-    {
-        return $this->adapter->getAll();
-    }
-
-    public function getList($start = 0, $limit = 30)
-    {
-        return $this->adapter->getList($start, $limit);
     }
 }
