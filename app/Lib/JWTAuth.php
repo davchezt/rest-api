@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @author      Raiza Rhamdan (Leonardo DaVchezt) <davchezt@gmail.com>
  * @copyright   Copyright (c), 2021 Raiza Rhamdan
@@ -73,12 +74,16 @@ class JWTAuth
     public static function getHeader($token)
     {
         $result = [];
-        $obj = self::verifyToken($token);
+        // config secret
+        $secret = self::$app->get('flight.config')['app']['secret'];
 
-        if ($obj && isset($obj->header)) {
+        // decode token
+        $obj = JWT::decode($token, $secret, ['HS256']);
+
+        if (self::verifyToken($token) && isset($obj->header)) {
             $result = (array) $obj->header;
         }
-        
+
         return $result;
     }
 
@@ -103,10 +108,12 @@ class JWTAuth
                 $now = strtotime(self::$app->helper()->timeNow(false, false, 'Y-m-d H:i:s'));
                 // expiration date
                 $exp = strtotime($obj->payload->exp);
-                
+
                 // chech expiration
                 if (($exp - $now) > 0) {
-                    return $obj;
+                    // return $obj;
+
+                    return true;
                 }
             }
         } catch (\Exception $ex) {

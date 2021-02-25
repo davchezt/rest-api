@@ -23,6 +23,6 @@ return [
         'host'      => 'mail.domain.com',
         'user'      => 'raiza@domain.com',
         'pass'      => 'password',
-    'name'          => 'Raiza Rhamdan'
+        'name'      => 'Raiza Rhamdan'
     ]
 ];

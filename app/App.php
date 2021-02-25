@@ -9,18 +9,17 @@ namespace app;
 
 defined("__DAVCHEZT") or die("{ \"response\" : \"error 403\"}");
 
-use flight\Engine;
-
 class App
 {
     protected $app = null;
+
     protected $id = 0;
     protected $token = null;
     protected $routers = [];
     protected $startTime;
     protected $config = [];
 
-    public function __construct(Engine $app, $config, $path)
+    public function __construct(AppEngine $app, $config)
     {
         $this->app = $app;
 
@@ -28,16 +27,6 @@ class App
         $this->config = $config;
 
         $this->app->set('flight.config', $config);
-
-        $this->app->register('request', 'app\Net\AppRequest', [$path]);
-        $this->app->register('response', 'app\Net\AppResponse');
-        $this->app->register('helper', 'app\Helper');
-        $this->app->register('plugin', 'app\Plugin');
-        $this->app->register('logger', 'app\Logger');
-        $this->app->register('mailer', 'app\Lib\Mailer');
-        $this->app->register('jwt', 'app\Lib\JWTAuth');
-        $this->app->register('db', 'app\Lib\Db');
-
         $this->app->set('flight.views.path', $this->app->request()->path() . '/resources/views');
 
         $this->app->plugin()->configure($this->app);
@@ -74,6 +63,8 @@ class App
     private function ckeckToken()
     {
         $token = $this->app->request()->getToken();
+        if ($token === null) return;
+
         $header = $this->app->jwt()->getHeader($token);
 
         $this->app->plugin()->trigger('before', [$this, &$token, &$header]); // App_ckeckToken_before

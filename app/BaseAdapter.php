@@ -9,8 +9,6 @@ namespace app;
 
 defined("__DAVCHEZT") or die("{ \"response\" : \"error 403\"}");
 
-use flight\Engine;
-
 class BaseAdapter
 {
     protected $app;
@@ -21,7 +19,7 @@ class BaseAdapter
         $this->table = $tableName;
     }
 
-    public function setup(Engine $app)
+    public function setup(AppEngine $app)
     {
         $this->app = $app;
     }

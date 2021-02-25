@@ -14,6 +14,7 @@ if (!file_exists('vendor/autoload.php')) {
 }
 
 use app\App;
+use app\AppEngine;
 use flight\Engine;
 
 date_default_timezone_set('Asia/Jakarta');
@@ -21,5 +22,5 @@ define('__DAVCHEZT', true);
 
 require 'vendor/autoload.php';
 
-$app = new App(new Engine, require 'config.php', realpath(dirname(__FILE__)));
+$app = new App(new AppEngine(realpath(dirname(__FILE__))), require 'config.php');
 $app->start();
