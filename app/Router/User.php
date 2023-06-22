@@ -118,7 +118,7 @@ class User extends BaseRouter
 
             $this->app->plugin()->trigger('after', [$this, &$response]); // Router_User_generateToken_after
 
-            $this->app->json(['response' => $response]);
+            $this->app->json(['response' => $response], $logdin != null ? 200 : 201);
         } else {
             $validator->getErrors(); // contains the errors
             $validator->getValues(); // can be used to repopulate the form

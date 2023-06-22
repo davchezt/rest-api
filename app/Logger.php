@@ -18,6 +18,10 @@ class Logger
     {
         self::$app = $app;
         self::$path = self::$app->request()->path()  . '/logs';
+
+        if (!is_dir(self::$path)) {
+            mkdir(self::$path);
+        }
     }
 
     public static function path($path)

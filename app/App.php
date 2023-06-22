@@ -34,11 +34,11 @@ class App
         $this->app->mailer()->configure($this->app);
         $this->app->jwt()->configure($this->app);
 
-        $this->initRouter();
-        $this->loadPlugins();
-
         $this->configureDatabase();
         $this->ckeckToken();
+
+        $this->initRouter();
+        $this->loadPlugins();
 
         $this->startTime = microtime(true);
     }
