@@ -16,9 +16,14 @@ class Image
 
     public function __construct($config = array())
     {
+        $this->configure($config);
+    }
+
+    public function configure($config = array())
+    {
         $this->config = $config;
         $uploadDir = $this->config["baseDir"].self::DS.$this->config["uploadDir"];
-        if (!is_dir($uploadDir) and !file_exists($uploadDir)) {
+        if (!is_dir($uploadDir)) {
             mkdir($this->config["baseDir"].self::DS.$this->config["uploadDir"]);
         
             // Crops
@@ -32,13 +37,13 @@ class Image
         }
     }
 
-    public function saveImage($key, $type = "crop", $watermark = false, $jpg = false, $id)
+    public function saveImage($key, $type = "crop", $watermark = false, $jpg = false)
     {
         if (empty($_FILES[$key]["tmp_name"])) {
             return;
         }
         // $fileName = $jpg ? substr($_FILES[$key]["name"], 0, -4).".jpg" : basename($_FILES[$key]["name"]);
-        $newName = 'ava_' . $id . '_' . pathinfo($_FILES[$key]["name"], PATHINFO_FILENAME);
+        $newName = 'img_' . pathinfo($_FILES[$key]["name"], PATHINFO_FILENAME);
         $fileName = $jpg ? strtolower(preg_replace("/\W+/", "_", $newName)).".jpg" : basename($_FILES[$key]["name"]);
         $image = null;
         switch ($type) {
@@ -54,7 +59,7 @@ class Image
         default:
             $destination = $this->config["baseDir"].self::DS.$this->config["uploadDir"].self::DS."originals".self::DS.$fileName;
             break;
-    }
+        }
         try {
             $file = $this->getUploadedFile($key);
             $image = $this->saveAsImage(
@@ -73,6 +78,56 @@ class Image
         }
 
         return $image;
+    }
+
+    public function saveImages($key, $type = "crop", $watermark = false, $jpg = false)
+    {
+        if (empty($_FILES[$key]["tmp_name"][0])) {
+            return;
+        }
+
+        $images = array();
+        $totalFiles = count($_FILES[$key]["tmp_name"]);
+
+        for ($i = 0; $i < $totalFiles; $i++) {
+            $newName = 'img_' . pathinfo($_FILES[$key]["name"][$i], PATHINFO_FILENAME);
+            $fileName = $jpg ? strtolower(preg_replace("/\W+/", "_", $newName)).".jpg" : basename($_FILES[$key]["name"][$i]);
+
+            switch ($type) {
+                case "crop":
+                    $destination = $this->config["baseDir"].self::DS.$this->config["uploadDir"].self::DS."crops".self::DS.$fileName;
+                    break;
+                case "min":
+                    $destination = $this->config["baseDir"].self::DS.$this->config["uploadDir"].self::DS."thumbs".self::DS.$fileName;
+                    break;
+                case "max":
+                    $destination = $this->config["baseDir"].self::DS.$this->config["uploadDir"].self::DS."normals".self::DS.$fileName;
+                    break;
+                default:
+                    $destination = $this->config["baseDir"].self::DS.$this->config["uploadDir"].self::DS."originals".self::DS.$fileName;
+                    break;
+            }
+
+            try {
+                $file = $this->getUploadedFiles($key, $i);
+                $image = $this->saveAsImage(
+                    $file,
+                    $destination,
+                    $this->config["imageWidth"],
+                    $this->config["imageHeight"],
+                    $type,
+                    $watermark
+                );
+                if ($image) {
+                    chmod($image, 0777);
+                    $images[] = $image;
+                }
+            } catch (\Exception $e) {
+                return $e->getMessage();
+            }
+        }
+
+        return $images;
     }
 
     public function getUploadedFile($key, $allowedTypes = array())
@@ -101,6 +156,35 @@ class Image
             throw new \Exception($error);
         } else {
             return $file["tmp_name"];
+        }
+    }
+
+    public function getUploadedFiles($key, $index, $allowedTypes = array())
+    {
+        $error = false;
+        if (!isset($_FILES[$key]) or !is_uploaded_file($_FILES[$key]["tmp_name"][$index])) {
+            $error = "Upload Failed";
+        } elseif (count($allowedTypes) != null and in_array(pathinfo($_FILES[$key]["name"][$index], PATHINFO_EXTENSION), $allowedTypes)) {
+            $error = "Invalid file type";
+        } else {
+            $file = $_FILES[$key];
+            switch ($file["error"]) {
+            case 1:
+            case 2:
+                $error = sprintf("file Upload is Too Big Max Is %d", ini_get("upload_max_filesize"));
+                break;
+            case 3:
+            case 4:
+            case 6:
+            case 7:
+            case 8:
+                $error = "[UPLOAD:FAIL]";
+        }
+        }
+        if ($error) {
+            throw new \Exception($error);
+        } else {
+            return $file["tmp_name"][$index];
         }
     }
 
@@ -148,14 +232,14 @@ class Image
 
         switch ($type) {
         case 1:
-            $image = @imagecreatefromgif($source);
+            $image = @\imagecreatefromgif($source);
             break;
         case 2:
-            $image = @imagecreatefromjpeg($source);
+            $image = @\imagecreatefromjpeg($source);
             break;
         case 3:
-            $image = @imagecreatefrompng($source);
-    }
+            $image = @\imagecreatefrompng($source);
+        }
         if (!$image) {
             throw new \Exception("File Is Not Image");
         }
@@ -238,10 +322,8 @@ class Image
             break;
 
         default:
-            // vignette($newImage);
-            // blur($newImage, 3);
             imagejpeg($newImage, $outputFile = $destination.".jpg", $this->config["jpegQuality"]);
-    }
+        }
         imagedestroy($newImage);
         imagedestroy($image);
 
@@ -267,7 +349,7 @@ class Image
             $height = intval(min($imageY / 2.5, $watermarkY, 64));
 
             $ratioX = $width / $watermarkX; // width
-        $ratioY = $height / $watermarkY; // height
+            $ratioY = $height / $watermarkY; // height
 
         if (($watermarkX <= $width) and ($imageY <= $height)) {
             $destinationW = $watermarkX;

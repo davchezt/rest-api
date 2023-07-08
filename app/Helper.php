@@ -54,6 +54,8 @@ class Helper
         if (empty($path)) {
             $path = ".";
         }
+
+        $path = str_replace("App", "app", $path);
     
         $fileList = $directoryList = [];
         $ignoreList = [".", "..", ".htaccess"];
@@ -114,5 +116,29 @@ class Helper
         }
 
         return false;
+    }
+
+    public static function isRateLimited($clientKey, $requestsLimit, $timeWindow)
+    {
+        if (!isset($_SESSION['rate_limit'][$clientKey])) {
+            $_SESSION['rate_limit'][$clientKey] = [
+                'requests' => 0,
+                'start_time' => time(),
+            ];
+        }
+
+        $currentTime = time();
+        $clientData = $_SESSION['rate_limit'][$clientKey];
+
+        if ($currentTime - $clientData['start_time'] > $timeWindow) {
+            $_SESSION['rate_limit'][$clientKey]['requests'] = 1;
+            $_SESSION['rate_limit'][$clientKey]['start_time'] = $currentTime;
+            return false;
+        } elseif ($clientData['requests'] < $requestsLimit) {
+            $_SESSION['rate_limit'][$clientKey]['requests']++;
+            return false;
+        } else {
+            return true;
+        }
     }
 }

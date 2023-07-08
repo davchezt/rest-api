@@ -18,7 +18,8 @@ class AppRequest extends Request
 
     public function __construct($path)
     {
-        // $this->path = str_replace(array('\\',' '), array('/','%20'), __PATH);
+        $this->path = $path;
+
         $config = array(
             'url' => str_replace('@', '%40', self::getVar('REQUEST_URI', '/')),
             'base' => str_replace(array('\\',' '), array('/','%20'), dirname(self::getVar('SCRIPT_NAME'))),
@@ -30,7 +31,7 @@ class AppRequest extends Request
             'scheme' => self::getScheme(),
             'user_agent' => self::getVar('HTTP_USER_AGENT'),
             'type' => self::getVar('CONTENT_TYPE'),
-            'length' => self::getVar('CONTENT_LENGTH', 0),
+            'length' => (int)self::getVar('CONTENT_LENGTH', 0),
             'query' => new Collection($_GET),
             'data' => new Collection($_POST),
             'cookies' => new Collection($_COOKIE),
@@ -47,7 +48,7 @@ class AppRequest extends Request
     public function __call($method, $args = false)
     {
         $reflect = new \ReflectionClass($this);
-        $props   = $reflect->getProperties(\ReflectionProperty::IS_PUBLIC);
+        $props = $reflect->getProperties(\ReflectionProperty::IS_PUBLIC);
 
         foreach ($props as $prop) {
             if ($method == $prop->getName()) {
@@ -61,7 +62,7 @@ class AppRequest extends Request
      *
      * @param array $properties Array of request properties
      */
-    public function init($properties = array())
+    public function init(array $properties = [])
     {
         // Set all the defined properties
         foreach ($properties as $name => $value) {
@@ -69,33 +70,29 @@ class AppRequest extends Request
         }
 
         // Get the requested URL without the base directory
-        if ($this->base != '/' && strlen($this->base) > 0 && strpos($this->url, $this->base) === 0) {
-            $this->url = preg_replace('#^' . preg_quote($this->base) . '(/index\.php)?#', '', $this->url);
-            $parts = explode('/', trim(urldecode($this->url), '/'));
-            if ($parts[0] == 'index.php') {
-                array_shift($parts);
-            }
-            $this->url = implode('/', $parts);
-            $this->url = '/' . trim($this->url, '/');
+        if ('/' !== $this->base && '' !== $this->base && 0 === strpos($this->url, $this->base)) {
+            $this->url = substr($this->url, \strlen($this->base));
         }
+
+        $scriptname = self::getVar('SCRIPT_NAME');
+        $this->url = str_replace($scriptname, '', $this->url);
 
         // Default url
         if (empty($this->url)) {
             $this->url = '/';
-        }
-        // Merge URL query parameters with $_GET
-        else {
-            $_GET += self::parseQuery($this->url);
+        } else {
+            // Merge URL query parameters with $_GET
+            $_GET = array_merge($_GET, self::parseQuery($this->url));
 
             $this->query->setData($_GET);
         }
 
         // Check for JSON input
-        if (strpos($this->type, 'application/json') === 0) {
-            $body = $this->getBody();
-            if ($body != '') {
+        if (0 === strpos($this->type, 'application/json')) {
+            $body = self::getBody();
+            if ('' !== $body && null !== $body) {
                 $data = json_decode($body, true);
-                if ($data != null) {
+                if (is_array($data)) {
                     $this->data->setData($data);
                 }
             }
@@ -148,7 +145,7 @@ class AppRequest extends Request
      *
      * @return string Raw HTTP request body
      */
-    public static function getBody()
+    public static function getBody(): ?string
     {
         static $body;
 

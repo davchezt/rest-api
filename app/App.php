@@ -19,12 +19,54 @@ class App
     protected $startTime;
     protected $config = [];
 
+    // Rate limit settings (adjust as needed)
+    protected $requestsLimit = 5; // Maximum number of requests allowed
+    protected $timeWindow = 1; // Time window in seconds
+
+    // Get the client IP address as the unique identifier
+    protected $clientIP = null;
+
     public function __construct(AppEngine $app, $config)
     {
         $this->app = $app;
-
-        // $config['app']['path'] = $path;
         $this->config = $config;
+
+        $this->startTime = microtime(true);
+
+        $this->clientIP = $this->app->request()->getVar('REMOTE_ADDR');
+        if ($this->app->helper()->isRateLimited($this->clientIP, $this->requestsLimit, $this->timeWindow)) {
+            $message = ['data' => 'Too many requests'];
+            
+            $this->app->response()->status(429);
+
+            $response = $this->app->response();
+            $status = $response->status();
+            $message = $response->message();
+
+            $data = [
+                'status' => $status,
+                'message' => $message,
+                'timestamp' => $this->app->helper()->timeNow(),
+                'response_time' => $this->getResponseTime() . ' sec'
+            ];
+
+            if ($this->config['app']['debug']) {
+                $data['request'] = [
+                    'method' => $this->app->request()->getMethod(),
+                    'body' => json_decode($this->app->request()->getBody(), true),
+                ];
+            }
+
+            $data['response'] = ['data' => 'Too many requests. Please try again after few sec.'];
+            $json = json_encode($data, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
+            
+            $this->app->response()
+                ->header('Content-Type', 'application/json; charset=utf-8')
+                ->write($json)
+                ->send();
+
+            exit;
+        }
 
         $this->app->set('flight.config', $config);
         $this->app->set('flight.views.path', $this->app->request()->path() . '/resources/views');
@@ -34,13 +76,21 @@ class App
         $this->app->mailer()->configure($this->app);
         $this->app->jwt()->configure($this->app);
 
+        $cnf = array(
+            "baseDir" => $this->app->request()->path() . '/uploads',
+            "uploadDir" => 'avatar',
+            "imageWidth" => 400,
+            "imageHeight" => 400,
+            "watermarkImage" => 'copy.png',
+            "jpegQuality" => 100
+        );
+        $this->app->image()->configure($cnf);
+
         $this->configureDatabase();
         $this->ckeckToken();
 
         $this->initRouter();
         $this->loadPlugins();
-
-        $this->startTime = microtime(true);
     }
 
     private function configureDatabase()
@@ -64,7 +114,7 @@ class App
     {
         $token = $this->app->request()->getToken();
         if ($token === null) return;
-
+        
         $header = $this->app->jwt()->getHeader($token);
 
         $this->app->plugin()->trigger('before', [$this, &$token, &$header]); // App_ckeckToken_before

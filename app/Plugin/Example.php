@@ -50,4 +50,15 @@ class Example extends BasePlugin
         /*unset($data['timestamp']);
         $json = ($encode) ? json_encode($data, $option) : $data;*/
     }
+
+    public function handler_Router_User_registerUser_init($router, &$username, &$password, &$name, &$dob, &$email, &$gender, &$address, &$lastInsertId, &$token)
+    {
+        if ($token != null)
+        {
+            $subject = "Registration Complite!";
+            $html = "";
+            $text = "Congragulation your registration complited, currently no need to response this message or doing vervication email, enjoy and have fun";
+            // $this->app->mailer()->send($email, $name, $subject, $html, $text);
+        }
+    }
 }

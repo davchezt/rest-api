@@ -48,22 +48,38 @@ class AppEngine extends Engine
 {
     protected $appPath;
 
-    public function __construct($path) {
+    public function __construct($path)
+    {
         $this->appPath = $path;
 
         parent::__construct();
     }
 
-    public function init() {
+    public function init(): void
+    {
         parent::init();
+
+        $this->loader->unregister('request');
+        $this->loader->unregister('response');
 
         $this->loader->register('request', 'app\Net\AppRequest', [$this->appPath]);
         $this->loader->register('response', 'app\Net\AppResponse');
+
         $this->loader->register('helper', 'app\Helper');
         $this->loader->register('plugin', 'app\Plugin');
         $this->loader->register('logger', 'app\Logger');
         $this->loader->register('mailer', 'app\Lib\Mailer');
         $this->loader->register('jwt', 'app\Lib\JWTAuth');
         $this->loader->register('db', 'app\Lib\Db');
+
+        $cnf = array(
+            "baseDir" => $this->request()->path() . '/uploads',
+            "uploadDir" => 'avatar',
+            "imageWidth" => 400,
+            "imageHeight" => 400,
+            "watermarkImage" => 'copy.png',
+            "jpegQuality" => 100
+        );
+        $this->loader->register('image', 'app\Lib\Image', [$cnf]);
     }
 }
