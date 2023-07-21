@@ -19,7 +19,15 @@ if (!is_dir($temp)) {
     mkdir($temp);
 }
 
-session_start();
+$replay = realpath(dirname(__FILE__)) . '/uploads/replay';
+if (!is_dir($replay)) {
+    mkdir($replay);
+}
+
+if (empty(session_id())) {
+    session_start();
+}
+
 ini_set('output_buffering', 'On');
 ini_set('output_compression', 'On');
 ini_set('output_compression_level', '6');

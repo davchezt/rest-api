@@ -2,6 +2,8 @@
 logs/
 temp/
 vendor/
+uploads/avatar
+uploads/replay
 composer.phar
 composer.lock
 config.php

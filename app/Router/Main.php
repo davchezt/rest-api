@@ -18,7 +18,10 @@ class Main extends BaseRouter
         $this->app->plugin()->trigger('before', [$this]); // Router_Main_init_before
         $this->app->route('/', [$this, 'mainHTML']);
         $this->app->route('/v1', [$this, 'mainJSON']);
-        $this->app->route('/v1/uploads', [$this, 'uploads']);
+        $this->app->route('GET /v1/replay', [$this, 'replayList']);
+        $this->app->route('GET /v1/replay/clear', [$this, 'replayClear'], false, true);
+        $this->app->route('POST /v1/uploads', [$this, 'uploads']);
+        $this->app->route('POST /v1/uploads/replay', [$this, 'uploadReplay']);
         $this->app->plugin()->trigger('after', [$this]); // Router_Main_init_after
     }
 
@@ -98,6 +101,101 @@ class Main extends BaseRouter
             'files' => $files
         ];
         $this->app->plugin()->trigger('init', [$this, &$response]); // Router_Main_upload_init
+
+        $this->app->json(['response' => $response]);
+    }
+
+    public function uploadReplay()
+    {
+        $data = $this->app->request()->data();
+        $files = $this->app->request()->files();
+
+        if (isset($files) && isset($_FILES['file']['tmp_name']))
+        {
+            // File was uploaded
+            $tmpFilePath = $_FILES['file']['tmp_name'];
+
+            // Additional checks and processing
+            if (is_uploaded_file($tmpFilePath)) {
+                // File is a valid upload
+
+                // Get the file name
+                $fileName = $_FILES['file']['name'];
+
+                // Move the uploaded file to a desired location
+                $destinationPath = $this->app->request()->path() . '/uploads/replay/' . $fileName;
+                move_uploaded_file($tmpFilePath, $destinationPath);
+
+                $message = "File saved: " . $destinationPath;
+                $this->app->logger()->write($message, 'upload');
+            } else {
+                $this->app->logger()->write("Upload failed", 'upload');
+            }
+        }
+        else{
+            $this->app->logger()->write(json_encode($_FILES), 'upload');
+        }
+
+        $response = [
+            'data' => $data,
+            'files' => $files
+        ];
+        $this->app->plugin()->trigger('init', [$this, &$response]); // Router_Main_upload_init
+
+        $this->app->json(['response' => $response]);
+    }
+    
+    public function replayList()
+    {
+        $data = $this->app->request()->data();
+        $files = array();
+        
+        $dir = $this->app->request()->path() . '/uploads/replay/';
+        $exts = $this->app->helper()->listingDir($dir);
+        if (count($exts) != 0) {
+            foreach ($exts['files'] as $ext) {
+                $file = $ext['location'] . '/' . $ext['file'];
+                $size = filesize($file);
+                $time = fileatime($file);
+
+                if (file_exists($file)) {
+                    $files[] = [
+                        'name' => $ext['file'],
+                        'size' => $this->app->helper()->formatFileSize($size),
+                        'time' => $this->app->helper()->formatFileAccessTime($time),
+                        'meta' => [
+                            'length' => $size,
+                            'timestamp' => $time
+                        ]
+                    ];
+                }
+            }
+        }
+        
+        $response = [
+            'count' => count($files),
+            'files' => $files
+        ];
+        $this->app->json(['response' => $response]);
+    }
+    
+    public function replayClear()
+    {
+        $dir = $this->app->request()->path() . '/uploads/replay/';
+        $exts = $this->app->helper()->listingDir($dir);
+        if (count($exts) != 0) {
+            foreach ($exts['files'] as $ext) {
+                $file = $ext['location'] . '/' . $ext['file'];
+                if (file_exists($file)) {
+                    unlink($file);
+                }
+            }
+        }
+        
+        $response = [
+            'data' => $data,
+            'files' => $files
+        ];
         $this->app->json(['response' => $response]);
     }
 }

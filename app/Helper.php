@@ -49,6 +49,19 @@ class Helper
         return $date->format($format);
     }
 
+    public static function formatFileAccessTime($accessTime, $format = 'Y-m-d H:i:s') {
+        return gmdate($format, $accessTime);
+    }
+
+    public static function formatFileSize($bytes, $precision = 2) {
+        $units = ['B', 'KB', 'MB', 'GB', 'TB'];
+        $base = log($bytes, 1024);
+        $formattedSize = round(pow(1024, $base - floor($base)), $precision);
+        $unit = $units[(int) floor($base)];
+    
+        return $formattedSize . ' ' . $unit;
+    }
+
     public static function listingDir($path)
     {
         if (empty($path)) {
